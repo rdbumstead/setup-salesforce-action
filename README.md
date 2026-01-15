@@ -1,9 +1,13 @@
 # Setup Salesforce CLI Action
 
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Salesforce%20CLI-blue.svg)](https://github.com/marketplace/actions/setup-salesforce-cli)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Salesforce%20CLI-blue.svg)](https://github.com/marketplace/actions/setup-salesforce-action)
 [![GitHub release](https://img.shields.io/github/v/release/rdbumstead/setup-salesforce-action)](https://github.com/rdbumstead/setup-salesforce-action/releases)
 [![Test Action](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test.yml)
+[![Cross Platform Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> **📢 v2.0.0 Released!** Now with full Windows and macOS support!
+> [Migration Guide](docs/MIGRATION_V1_TO_V2.md) | [What's New](#-whats-new-in-v2)
 
 > Flexible, fast, and production-ready Salesforce CLI setup with JWT authentication and optional tooling.
 
@@ -11,9 +15,52 @@ Created by [Ryan Bumstead](https://github.com/rdbumstead) | [Portfolio](https://
 
 ---
 
+## 🎉 What's New in v2
+
+### 🌐 Cross-Platform Support
+
+Run your Salesforce CI/CD on **any platform**:
+
+- ✅ **Ubuntu (Linux)** - Fastest, most cost-effective
+- ✅ **Windows** - Native Windows tooling support, PowerShell & Bash
+- ✅ **macOS** - Native Mac environment for Mac-first teams
+
+### 🔌 Custom Plugin Support
+
+Install any Salesforce CLI plugin you need:
+
+```yaml
+custom_sf_plugins: "sfdx-hardis,@salesforce/plugin-packaging"
+```
+
+### 📂 Enhanced Multi-Directory Support
+
+New `source_flags` output for seamless multi-directory workflows:
+
+```yaml
+- id: setup
+  uses: rdbumstead/setup-salesforce-action@v2
+  with:
+    source_dirs: "force-app,packages/core"
+- run: sf project deploy start ${{ steps.setup.outputs.source_flags }}
+```
+
+### 💪 Better Developer Experience
+
+- Automatic directory creation (no more missing folder errors)
+- Improved error messages with actionable feedback
+- Network retry logic (3 attempts for resilience)
+- Stricter input validation
+- Platform-specific optimizations
+
+**Upgrading from v1?** It's seamless - just change `@v1` to `@v2`! See [Migration Guide](docs/MIGRATION_V1_TO_V2.md).
+
+---
+
 ## ✨ Features
 
 - 🚀 **Lightning Fast** - 20-45 seconds setup with intelligent caching (vs 2-3 min without)
+- 🌐 **Cross-Platform** - Full support for Ubuntu, Windows, and macOS runners
 - 🔐 **Secure JWT Auth** - Non-interactive, certificate-based authentication
 - ⚙️ **Fully Optional** - Install only what you need, nothing more
 - 🎯 **Flexible Config** - From minimal CLI-only to full-stack development
@@ -30,7 +77,7 @@ Created by [Ryan Bumstead](https://github.com/rdbumstead) | [Portfolio](https://
 
 ```yaml
 - name: Setup Salesforce
-  uses: rdbumstead/setup-salesforce-action@v1
+  uses: rdbumstead/setup-salesforce-action@v2
   with:
     jwt_key: ${{ secrets.SFDX_JWT_KEY }}
     client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -45,7 +92,7 @@ Created by [Ryan Bumstead](https://github.com/rdbumstead) | [Portfolio](https://
 
 ```yaml
 - name: Setup Salesforce
-  uses: rdbumstead/setup-salesforce-action@v1
+  uses: rdbumstead/setup-salesforce-action@v2
   with:
     jwt_key: ${{ secrets.SFDX_JWT_KEY }}
     client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -62,7 +109,7 @@ Created by [Ryan Bumstead](https://github.com/rdbumstead) | [Portfolio](https://
 
 ```yaml
 - name: Setup Salesforce
-  uses: rdbumstead/setup-salesforce-action@v1
+  uses: rdbumstead/setup-salesforce-action@v2
   with:
     jwt_key: ${{ secrets.SFDX_JWT_KEY }}
     client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -98,13 +145,16 @@ _Required unless `skip_auth: 'true'` is set_
 | `node_version` | `20`        | Node.js version to use             |
 | `skip_auth`    | `false`     | Skip JWT authentication (CLI only) |
 | `alias`        | `TargetOrg` | Alias name for authenticated org   |
+| `source_dirs`  | `force-app` | Comma-separated source directories |
+| `strict`       | `false`     | Fail on optional tool errors       |
 
 ### Salesforce Plugins
 
-| Name              | Default | Description                              |
-| ----------------- | ------- | ---------------------------------------- |
-| `install_scanner` | `false` | Install @salesforce/plugin-code-analyzer |
-| `install_delta`   | `false` | Install sfdx-git-delta                   |
+| Name                | Default | Description                                   |
+| ------------------- | ------- | --------------------------------------------- |
+| `install_scanner`   | `false` | Install @salesforce/plugin-code-analyzer      |
+| `install_delta`     | `false` | Install sfdx-git-delta                        |
+| `custom_sf_plugins` | `""`    | Comma-separated list of additional SF plugins |
 
 ### Development Tools
 
@@ -114,6 +164,18 @@ _Required unless `skip_auth: 'true'` is set_
 | `install_eslint`   | `false` | Install ESLint and Salesforce plugins   |
 | `install_lwc_jest` | `false` | Install sfdx-lwc-jest for LWC testing   |
 
+### Outputs
+
+| Name             | Description                                         |
+| ---------------- | --------------------------------------------------- |
+| `org_id`         | Authenticated Salesforce Org ID                     |
+| `org_edition`    | Salesforce Edition (Developer, Enterprise, etc.)    |
+| `org_type`       | Organization type (Production, Sandbox, Scratch)    |
+| `username`       | Authenticated username                              |
+| `instance_url`   | Org instance URL                                    |
+| `sf_cli_version` | Installed Salesforce CLI version                    |
+| `source_flags`   | Resolved source directory flags for SF CLI commands |
+
 ---
 
 ## 🛠️ Setup Guide
@@ -121,28 +183,10 @@ _Required unless `skip_auth: 'true'` is set_
 <details>
 <summary><b>Step 1: Create Connected App in Salesforce</b></summary>
 
-### Generate Certificate
+### 1.3 Additional Resources
 
-Open your terminal:
-
-```bash
-openssl req -x509 -nodes -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -subj "/CN=SalesforceDevOps"
-```
-
-### Configure Connected App
-
-1. Salesforce Setup → App Manager → New Connected App
-2. Basic Info:
-   - Name: `GitHub Actions CI/CD`
-   - Contact Email: your email
-3. Enable OAuth Settings
-4. Enable "Use digital signatures"
-5. Upload `server.crt`
-6. Add OAuth Scopes: `full`, `refresh_token`, `offline_access`
-7. Save and wait 2-10 minutes
-8. Copy the Consumer Key
-
-[Full Documentation](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_auth_jwt_flow.htm)
+- [JWT Auth Flow Documentation](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_auth_jwt_flow.htm)
+- [External Client Apps Settings](https://help.salesforce.com/s/articleView?id=release-notes.rn_security_external_client_apps.htm)
 
 </details>
 
@@ -179,7 +223,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -212,7 +256,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -243,7 +287,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -280,7 +324,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -314,7 +358,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -348,7 +392,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce (Dev)
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -364,7 +408,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce (Prod)
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -393,7 +437,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce CLI
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           skip_auth: "true"
           install_delta: "true"
@@ -411,43 +455,141 @@ jobs:
 
 Authenticate to multiple orgs in the same workflow:
 
-    name: Multi-Org Workflow
+```yaml
+name: Multi-Org Workflow
 
-    on:
-      push:
-        branches: [main]
+on:
+  push:
+    branches: [main]
 
-    jobs:
-      deploy:
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-          - name: Setup Development Org
-            uses: rdbumstead/setup-salesforce-action@v1
-            with:
-              jwt_key: ${{ secrets.SFDX_JWT_KEY }}
-              client_id: ${{ secrets.SFDX_CLIENT_ID }}
-              username: ${{ vars.DEV_USERNAME }}
-              alias: "dev"
-              install_delta: "true"
+      - name: Setup Development Org
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.DEV_USERNAME }}
+          alias: "dev"
+          install_delta: "true"
 
-          - name: Setup Production Org
-            uses: rdbumstead/setup-salesforce-action@v1
-            with:
-              jwt_key: ${{ secrets.SFDX_JWT_KEY }}
-              client_id: ${{ secrets.SFDX_CLIENT_ID }}
-              username: ${{ vars.PROD_USERNAME }}
-              alias: "prod"
-              install_delta: "true"
+      - name: Setup Production Org
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.PROD_USERNAME }}
+          alias: "prod"
+          install_delta: "true"
 
-          - name: Deploy to Development
-            run: |
-              sf project deploy start --target-org dev --test-level NoTestRun
+      - name: Deploy to Development
+        run: |
+          sf project deploy start --target-org dev --test-level NoTestRun
 
-          - name: Deploy to Production
-            run: |
-              sf project deploy start --target-org prod --test-level RunLocalTests
+      - name: Deploy to Production
+        run: |
+          sf project deploy start --target-org prod --test-level RunLocalTests
+```
+
+</details>
+
+<details>
+<summary><b>Cross-Platform Testing</b></summary>
+
+Test your code on all platforms:
+
+```yaml
+name: Cross-Platform Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          install_lwc_jest: "true"
+
+      - name: Run Tests
+        run: npm test
+```
+
+</details>
+
+<details>
+<summary><b>Custom Plugins</b></summary>
+
+Install additional Salesforce CLI plugins:
+
+```yaml
+name: Custom Plugins
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce with Custom Plugins
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          custom_sf_plugins: "sfdx-hardis,@salesforce/plugin-packaging"
+
+      - name: Use Custom Plugin
+        run: sf hardis:org:diagnose:legacyapi
+```
+
+</details>
+
+<details>
+<summary><b>Multi-Directory Projects</b></summary>
+
+Handle multiple source directories:
+
+```yaml
+name: Multi-Directory Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce
+        id: setup
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          source_dirs: "force-app,packages/core,packages/utils"
+
+      - name: Deploy All Directories
+        run: sf project deploy start ${{ steps.setup.outputs.source_flags }}
+```
 
 </details>
 
@@ -455,12 +597,12 @@ Authenticate to multiple orgs in the same workflow:
 
 ## ⚡ Performance Comparison
 
-| Configuration      | Tools                 | Cache Hit | Cache Miss |
-| ------------------ | --------------------- | --------- | ---------- |
-| Minimal            | CLI only              | 20s       | 1.5 min    |
-| Recommended        | CLI + delta + scanner | 35s       | 2 min      |
-| Full Stack         | All tools             | 45s       | 2.5 min    |
-| CLI Only (no auth) | CLI + plugins         | 25s       | 1.8 min    |
+| Configuration  | Tools                 | Cache Hit | Cache Miss |
+| -------------- | --------------------- | --------- | ---------- |
+| Minimal        | CLI only              | ~25s      | ~1.5 min   |
+| Recommended    | CLI + delta + scanner | ~55s      | ~2 min     |
+| Full Stack     | All tools             | ~55s      | ~2.5 min   |
+| Custom Plugins | CLI + heavy plugins   | ~95s      | ~3 min     |
 
 **Why so fast?**
 
@@ -468,6 +610,10 @@ Authenticate to multiple orgs in the same workflow:
 - Conditional installation (skip if cached)
 - Parallel npm operations
 - No redundant downloads
+- Platform-specific optimizations
+
+> [!NOTE]
+> Windows runners on GitHub Actions are **notoriously slower** due to file system differences and lower I/O performance. Expect execution times to be **2-3x longer** on Windows compared to Ubuntu or macOS. We highly recommend using Ubuntu runners for your primary CI/CD pipelines for best performance.
 
 ---
 
@@ -480,15 +626,18 @@ Authenticate to multiple orgs in the same workflow:
 
 ## 📊 Comparison with Alternatives
 
-| Feature               | This Action | Manual Setup | Salesforce Official |
-| --------------------- | ----------- | ------------ | ------------------- |
-| Setup Time (cached)   | 20-45s      | N/A          | 60-90s              |
-| JWT Auth Built-in     | ✅          | ❌           | ❌                  |
-| Optional Plugins      | ✅          | ❌           | ❌                  |
-| Dev Tools Integration | ✅          | ❌           | ❌                  |
-| Smart Caching         | ✅          | ❌           | ⚠️ Basic            |
-| Skip Auth Option      | ✅          | ✅           | ❌                  |
-| Minimal by Default    | ✅          | N/A          | ❌                  |
+| Feature               | This Action (v2) | Manual Setup | Salesforce Official |
+| --------------------- | ---------------- | ------------ | ------------------- |
+| Setup Time (cached)   | 25s - 1.5m       | N/A          | 60-90s              |
+| Cross-Platform        | ✅ Win/Mac/Linux | ✅           | ⚠️ Limited          |
+| JWT Auth Built-in     | ✅               | ❌           | ❌                  |
+| Optional Plugins      | ✅               | ❌           | ❌                  |
+| Custom Plugins        | ✅               | ✅           | ❌                  |
+| Dev Tools Integration | ✅               | ❌           | ❌                  |
+| Smart Caching         | ✅               | ❌           | ⚠️ Basic            |
+| Skip Auth Option      | ✅               | ✅           | ❌                  |
+| Minimal by Default    | ✅               | N/A          | ❌                  |
+| Source Dir Resolution | ✅               | ❌           | ❌                  |
 
 ---
 
@@ -506,6 +655,10 @@ Authenticate to multiple orgs in the same workflow:
 3. Check username matches org
 4. Verify Consumer Key is correct
 5. Ensure Connected App has OAuth scopes
+6. **(Winter '25+)** Verify "Allow creation of connected apps" is enabled in Setup
+
+- Setup → External Client Apps → Settings
+- Toggle on "Allow creation of connected apps"
 
 </details>
 
@@ -519,6 +672,7 @@ Authenticate to multiple orgs in the same workflow:
 1. Retry workflow (intermittent npm issues)
 2. Check internet connectivity
 3. Disable unused plugins
+4. Action has automatic retry logic (3 attempts)
 
 </details>
 
@@ -535,15 +689,35 @@ Authenticate to multiple orgs in the same workflow:
 
 </details>
 
+<details>
+<summary><b>Windows/macOS Issues</b></summary>
+
+See [Platform Support](docs/PLATFORM_SUPPORT.md) for platform-specific troubleshooting.
+
+</details>
+
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Custom CLI version support
-- [ ] Additional plugin installation (custom list)
-- [ ] Windows/macOS runner support
-- [ ] Sandbox URL configuration
+- [x] Cross-platform support (Windows, macOS)
+- [x] Custom plugin installation
+- [x] Multi-directory source handling
+- [ ] External Client App support (Winter '25+ orgs)
+- [ ] CLI version auto-detection
+- [ ] Enhanced validation outputs
 - [ ] Integration with Salesforce Code Analyzer v4
+
+---
+
+## 📝 Documentation
+
+- 📖 [Quick Start Guide](docs/QUICKSTART.md) - Get started in 15 minutes
+- 📄 [Migration from v1](docs/MIGRATION_V1_TO_V2.md) - Upgrade guide
+- 🖥️ [Platform Support](docs/PLATFORM_SUPPORT.md) - Windows, macOS, Linux details
+- 🧪 [Testing Strategy](docs/TESTING_STRATEGY.md) - How we test
+- 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- 🤝 [Contributing](CONTRIBUTING.md) - How to contribute
 
 ---
 

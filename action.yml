@@ -1,5 +1,5 @@
 name: "Setup Salesforce CLI"
-description: "Install Salesforce CLI, authenticate with JWT, and optionally configure plugins for CI/CD"
+description: "Enterprise-grade Salesforce CLI setup with authentication, caching, and optional tooling"
 author: "Ryan Bumstead"
 
 branding:
@@ -8,212 +8,612 @@ branding:
 
 inputs:
   # ============================================================================
-  # AUTHENTICATION INPUTS (Required unless skip_auth is true)
+  # CORE RUNTIME
   # ============================================================================
-  jwt_key:
-    description: "SFDX JWT Private Key"
-    required: false
-  client_id:
-    description: "Connected App Client ID"
-    required: false
-  username:
-    description: "Salesforce Username"
-    required: false
-
-  # ============================================================================
-  # CONFIGURATION (Optional)
-  # ============================================================================
-  is_dev_hub:
-    description: "Set as Default Dev Hub (true/false)"
-    required: false
-    default: "false"
   node_version:
-    description: "Node.js version to use"
+    description: "Node.js version"
     required: false
     default: "20"
-  skip_auth:
-    description: "Skip JWT authentication (install CLI only)"
+
+  cli_version:
+    description: "Salesforce CLI version (latest or explicit version like 2.x.x)"
+    required: false
+    default: "latest"
+
+  strict:
+    description: "Fail pipeline on optional tool installation errors"
     required: false
     default: "false"
+
+  # ============================================================================
+  # AUTHENTICATION
+  # ============================================================================
+  skip_auth:
+    description: "Skip authentication (CLI installation only)"
+    required: false
+    default: "false"
+
+  jwt_key:
+    description: "SFDX JWT Private Key (required unless skip_auth is true)"
+    required: false
+
+  client_id:
+    description: "Connected App Client ID (required unless skip_auth is true)"
+    required: false
+
+  username:
+    description: "Salesforce Username (required unless skip_auth is true)"
+    required: false
+
   alias:
-    description: "Alias name for authenticated org"
+    description: "Org alias for authenticated org"
     required: false
     default: "TargetOrg"
 
-  # ============================================================================
-  # SALESFORCE PLUGINS (All Optional)
-  # ============================================================================
-  install_scanner:
-    description: "Install @salesforce/plugin-code-analyzer?"
-    required: false
-    default: "false"
-  install_delta:
-    description: "Install sfdx-git-delta?"
+  is_dev_hub:
+    description: "Set org as default Dev Hub"
     required: false
     default: "false"
 
+  instance_url:
+    description: "Salesforce login URL (login.salesforce.com or test.salesforce.com)"
+    required: false
+    default: "https://login.salesforce.com"
+
   # ============================================================================
-  # DEVELOPMENT TOOLS (All Optional)
+  # OPTIONAL TOOLING
   # ============================================================================
+  install_delta:
+    description: "Install sfdx-git-delta for delta deployments"
+    required: false
+    default: "false"
+
+  install_scanner:
+    description: "Install Salesforce Code Analyzer for static analysis"
+    required: false
+    default: "false"
+
   install_prettier:
-    description: "Install Prettier and Salesforce plugins?"
+    description: "Install Prettier with Salesforce plugins for code formatting"
     required: false
     default: "false"
+
   install_eslint:
-    description: "Install ESLint and Salesforce plugins?"
+    description: "Install ESLint with Salesforce plugins for linting"
     required: false
     default: "false"
+
   install_lwc_jest:
-    description: "Install sfdx-lwc-jest for LWC unit testing?"
+    description: "Install @salesforce/sfdx-lwc-jest for LWC unit testing"
     required: false
     default: "false"
+
+  custom_sf_plugins:
+    description: "Comma-separated list of additional Salesforce CLI plugins to install (e.g., 'sfdx-hardis,@salesforce/plugin-packaging')"
+    required: false
+    default: ""
+
+  # ============================================================================
+  # SOURCE DIRECTORY RESOLUTION
+  # ============================================================================
+  source_dirs:
+    description: "Comma-separated source directories (e.g., 'force-app,packages/core')"
+    required: false
+    default: "force-app"
+
+outputs:
+  org_id:
+    description: "Authenticated Salesforce Org ID"
+    value: ${{ steps.detect-org.outputs.org_id }}
+
+  org_edition:
+    description: "Salesforce Edition (Developer, Enterprise, Unlimited, etc.)"
+    value: ${{ steps.detect-org.outputs.org_edition }}
+
+  org_type:
+    description: "Organization type (Production, Sandbox, or Scratch)"
+    value: ${{ steps.detect-org.outputs.org_type }}
+
+  username:
+    description: "Authenticated username"
+    value: ${{ steps.detect-org.outputs.username }}
+
+  instance_url:
+    description: "Org instance URL"
+    value: ${{ steps.detect-org.outputs.instance_url }}
+
+  sf_cli_version:
+    description: "Installed Salesforce CLI version"
+    value: ${{ steps.install-cli.outputs.cli_version }}
+
+  source_flags:
+    description: "Resolved source directory flags for SF CLI commands"
+    value: ${{ steps.resolve-source-dirs.outputs.source_flags }}
 
 runs:
   using: "composite"
   steps:
-    # ------------------------------------------------------------------
-    # NODE SETUP (Always)
-    # ------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # CORE SETUP
+    # --------------------------------------------------------------------------
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node_version }}
 
-    # ------------------------------------------------------------------
-    # CACHING LOGIC (Always for performance)
-    # ------------------------------------------------------------------
-    - name: Cache Salesforce CLI & Plugins
-      id: cache-sf
+    - name: Detect Operating System
+      id: detect-os
+      shell: bash
+      run: |
+        case "${{ runner.os }}" in
+          Linux)
+            echo "os_type=linux" >> $GITHUB_OUTPUT
+            echo "package_manager=apt" >> $GITHUB_OUTPUT
+            ;;
+          macOS)
+            echo "os_type=macos" >> $GITHUB_OUTPUT
+            echo "package_manager=brew" >> $GITHUB_OUTPUT
+            ;;
+          Windows)
+            echo "os_type=windows" >> $GITHUB_OUTPUT
+            echo "package_manager=choco" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "os_type=unknown" >> $GITHUB_OUTPUT
+            echo "package_manager=none" >> $GITHUB_OUTPUT
+            ;;
+        esac
+        echo "Detected OS: ${{ runner.os }}"
+
+    - name: Ensure dependencies (jq) - Linux
+      if: steps.detect-os.outputs.os_type == 'linux'
+      shell: bash
+      run: |
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq on Linux..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "✅ jq already installed"
+        fi
+
+    - name: Ensure dependencies (jq) - macOS
+      if: steps.detect-os.outputs.os_type == 'macos'
+      shell: bash
+      run: |
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq on macOS..."
+          brew install jq
+        else
+          echo "✅ jq already installed"
+        fi
+
+    - name: Ensure dependencies (jq) - Windows
+      if: steps.detect-os.outputs.os_type == 'windows'
+      shell: pwsh
+      run: |
+        if (!(Get-Command jq -ErrorAction SilentlyContinue)) {
+          Write-Host "Installing jq on Windows..."
+          choco install jq -y
+        } else {
+          Write-Host "✅ jq already installed"
+        }
+
+    - name: Generate cache key
+      id: cache-key
+      shell: bash
+      run: |
+        # Create a deterministic cache key based on all tool installations
+        TOOLS_HASH=$(echo "${{ inputs.install_delta }}-${{ inputs.install_scanner }}-${{ inputs.install_prettier }}-${{ inputs.install_eslint }}-${{ inputs.install_lwc_jest }}-${{ inputs.custom_sf_plugins }}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+        echo "tools_hash=$TOOLS_HASH" >> $GITHUB_OUTPUT
+
+    - name: Cache Salesforce CLI and plugins
       uses: actions/cache@v4
       with:
         path: |
           ~/.npm
           ~/.local/share/sf
-        key: sf-tools-${{ runner.os }}-node-${{ inputs.node_version }}-scanner-${{ inputs.install_scanner }}-delta-${{ inputs.install_delta }}-prettier-${{ inputs.install_prettier }}-eslint-${{ inputs.install_eslint }}-jest-${{ inputs.install_lwc_jest }}-v4
+          ~/.cache/node-gyp
+          ~/AppData/Local/sf
+          ~/AppData/Roaming/npm
+        key: sf-v2-${{ runner.os }}-node${{ inputs.node_version }}-cli${{ inputs.cli_version }}-tools${{ steps.cache-key.outputs.tools_hash }}
         restore-keys: |
-          sf-tools-${{ runner.os }}-node-${{ inputs.node_version }}-
-          sf-tools-${{ runner.os }}-
+          sf-v2-${{ runner.os }}-node${{ inputs.node_version }}-cli${{ inputs.cli_version }}-
+          sf-v2-${{ runner.os }}-node${{ inputs.node_version }}-
 
-    # ------------------------------------------------------------------
-    # SALESFORCE CLI (Always)
-    # ------------------------------------------------------------------
     - name: Install Salesforce CLI
+      id: install-cli
       shell: bash
       run: |
         if ! command -v sf &> /dev/null; then
           echo "Installing Salesforce CLI..."
-          npm install @salesforce/cli --global
+          
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          BASE_DELAY=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            # Calculate exponential backoff: 5s, 10s, 20s
+            DELAY=$((BASE_DELAY * (2 ** RETRY_COUNT)))
+            
+            echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
+            
+            if [ "${{ inputs.cli_version }}" = "latest" ]; then
+              INSTALL_CMD="npm install -g @salesforce/cli"
+            else
+              INSTALL_CMD="npm install -g @salesforce/cli@${{ inputs.cli_version }}"
+            fi
+            
+            if $INSTALL_CMD; then
+              echo "✅ Salesforce CLI installed successfully"
+              break
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              sleep $DELAY
+            else
+              echo "❌ Failed to install Salesforce CLI after $MAX_RETRIES attempts"
+              echo "💡 This may be due to:"
+              echo "   - Network connectivity issues"
+              echo "   - npm registry availability"
+              echo "   - GitHub Actions rate limiting"
+              echo "   - Retry the workflow or use a specific CLI version"
+              exit 1
+            fi
+          done
         else
-          echo "Salesforce CLI already installed ($(sf --version))"
+          echo "✅ Salesforce CLI already installed"
         fi
 
-    # ------------------------------------------------------------------
-    # SALESFORCE PLUGINS (Optional)
-    # ------------------------------------------------------------------
-    - name: Install Delta Plugin
-      if: inputs.install_delta == 'true'
+        CLI_VERSION=$(sf --version | head -n 1)
+        echo "Installed: $CLI_VERSION"
+        echo "cli_version=$CLI_VERSION" >> $GITHUB_OUTPUT
+
+    # ==========================================================================
+    # MISSING STEP: SOURCE DIRECTORY RESOLUTION
+    # ==========================================================================
+    - name: Resolve Source Directories
+      id: resolve-source-dirs
       shell: bash
       run: |
-        if ! sf plugins inspect sfdx-git-delta >/dev/null 2>&1; then
-          echo "Installing sfdx-git-delta..."
-          echo y | sf plugins install sfdx-git-delta
-        else
-          echo "✓ sfdx-git-delta already installed"
+        RAW_INPUT="${{ inputs.source_dirs }}"
+        [ -z "$RAW_INPUT" ] && RAW_INPUT="force-app"
+
+        IFS=',' read -ra DIRS <<< "$RAW_INPUT"
+        FLAGS=""
+        HAS_VALID_DIR=false
+
+        echo "🔍 Resolving source directories..."
+
+        for dir in "${DIRS[@]}"; do
+          dir=$(echo "$dir" | xargs)
+          
+          if [ -d "$dir" ]; then
+            FLAGS="$FLAGS --source-dir $dir"
+            HAS_VALID_DIR=true
+            echo "  ✅ Found: $dir"
+          elif [ "$dir" == "force-app" ]; then
+            # DRY FIX: Automatically create default directory if missing (e.g., in tests)
+            echo "  ⚠️  Default directory '$dir' not found. Creating it..."
+            mkdir -p "$dir"
+            FLAGS="$FLAGS --source-dir $dir"
+            HAS_VALID_DIR=true
+            echo "  ✅ Created: $dir"
+          else
+            echo "  ⚠️  Warning: Directory '$dir' not found"
+          fi
+        done
+
+        if [ "$HAS_VALID_DIR" = "false" ]; then
+          echo "❌ Error: No valid source directories found."
+          exit 1
         fi
 
-    - name: Install Code Analyzer
-      if: inputs.install_scanner == 'true'
+        echo "SF_SOURCE_FLAGS=$FLAGS" >> $GITHUB_ENV
+        echo "source_flags=$FLAGS" >> $GITHUB_OUTPUT
+
+    # --------------------------------------------------------------------------
+    # INPUT VALIDATION
+    # --------------------------------------------------------------------------
+    - name: Validate authentication inputs
+      if: inputs.skip_auth != 'true'
       shell: bash
       run: |
-        if ! sf plugins inspect @salesforce/plugin-code-analyzer >/dev/null 2>&1; then
-          echo "Installing @salesforce/plugin-code-analyzer..."
-          echo y | sf plugins install @salesforce/plugin-code-analyzer
-        else
-          echo "✓ @salesforce/plugin-code-analyzer already installed"
+        MISSING_INPUTS=()
+
+        if [ -z "${{ inputs.jwt_key }}" ]; then
+          MISSING_INPUTS+=("jwt_key")
         fi
 
-    # ------------------------------------------------------------------
-    # DEVELOPMENT TOOLS (Optional)
-    # ------------------------------------------------------------------
-    - name: Install Prettier
-      if: inputs.install_prettier == 'true'
-      shell: bash
-      run: |
-        if ! command -v prettier &> /dev/null; then
-          echo "Installing Prettier and plugins..."
-          npm install --global prettier prettier-plugin-apex @prettier/plugin-xml
-        else
-          echo "✓ Prettier already installed"
+        if [ -z "${{ inputs.client_id }}" ]; then
+          MISSING_INPUTS+=("client_id")
         fi
 
-    - name: Install ESLint
-      if: inputs.install_eslint == 'true'
-      shell: bash
-      run: |
-        if ! command -v eslint &> /dev/null; then
-          echo "Installing ESLint and Salesforce plugins..."
-          npm install --global eslint @salesforce/eslint-config-lwc @lwc/eslint-plugin-lwc
-        else
-          echo "✓ ESLint already installed"
+        if [ -z "${{ inputs.username }}" ]; then
+          MISSING_INPUTS+=("username")
         fi
 
-    - name: Install LWC Jest
-      if: inputs.install_lwc_jest == 'true'
-      shell: bash
-      run: |
-        if ! npm list -g @salesforce/sfdx-lwc-jest &> /dev/null; then
-          echo "Installing sfdx-lwc-jest..."
-          npm install --global @salesforce/sfdx-lwc-jest
-        else
-          echo "✓ sfdx-lwc-jest already installed"
+        if [ ${#MISSING_INPUTS[@]} -gt 0 ]; then
+          echo "❌ Error: The following required inputs are missing when skip_auth is false:"
+          printf '  - %s\n' "${MISSING_INPUTS[@]}"
+          exit 1
         fi
 
-    # ------------------------------------------------------------------
-    # AUTHENTICATION (Optional - can be skipped)
-    # ------------------------------------------------------------------
-    - name: Authenticate via JWT
+    # --------------------------------------------------------------------------
+    # AUTHENTICATION
+    # --------------------------------------------------------------------------
+    - name: Authenticate Org
       if: inputs.skip_auth != 'true'
       shell: bash
       run: |
         set -e
 
+        # Create JWT key file with secure permissions
+        echo "${{ inputs.jwt_key }}" > jwt.key
+
+        # Set secure permissions (cross-platform)
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # Windows: Use icacls to restrict access
+          icacls jwt.key /inheritance:r
+          icacls jwt.key /grant:r "$USERNAME:(R)"
+        else
+          # Unix-like: Use chmod
+          chmod 600 jwt.key
+        fi
+
+        # Cleanup function
         cleanup() {
           rm -f jwt.key
         }
         trap cleanup EXIT
 
-        echo "${{ inputs.jwt_key }}" > jwt.key
-        chmod 600 jwt.key
+        # Build auth command
+        AUTH_CMD="sf org login jwt \
+          --client-id ${{ inputs.client_id }} \
+          --jwt-key-file jwt.key \
+          --username ${{ inputs.username }} \
+          --instance-url ${{ inputs.instance_url }} \
+          --alias ${{ inputs.alias }}"
 
+        # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
-          echo "Authenticating as Dev Hub..."
-          sf org login jwt \
-            --client-id "${{ inputs.client_id }}" \
-            --jwt-key-file jwt.key \
-            --username "${{ inputs.username }}" \
-            --instance-url https://login.salesforce.com \
-            --set-default-dev-hub \
-            --alias "${{ inputs.alias }}"
+          echo "🔐 Authenticating as Dev Hub..."
+          $AUTH_CMD --set-default-dev-hub
         else
-          echo "Authenticating to org..."
-          sf org login jwt \
-            --client-id "${{ inputs.client_id }}" \
-            --jwt-key-file jwt.key \
-            --username "${{ inputs.username }}" \
-            --instance-url https://login.salesforce.com \
-            --set-default \
-            --alias "${{ inputs.alias }}"
+          echo "🔐 Authenticating to org..."
+          $AUTH_CMD --set-default
         fi
 
-    - name: Detect Org Type
+        echo "✅ Authentication successful"
+
+    - name: Detect Org Details
+      id: detect-org
       if: inputs.skip_auth != 'true'
       shell: bash
       run: |
         set -e
-        ORG_DETAILS=$(sf org display --json)
-        EDITION=$(echo "$ORG_DETAILS" | jq -r '.result.edition // "Unknown"')
-        ORG_ID=$(echo "$ORG_DETAILS" | jq -r '.result.id // "Unknown"')
 
-        echo "ORG_EDITION=$EDITION" >> $GITHUB_ENV
-        echo "ORG_ID=$ORG_ID" >> $GITHUB_ENV
-        echo "✓ Connected to $EDITION org ($ORG_ID)"
+        echo "🔍 Retrieving org details..."
+        DETAILS=$(sf org display --target-org ${{ inputs.alias }} --json)
+
+        # Extract org information
+        ORG_ID=$(echo "$DETAILS" | jq -r '.result.id // "unknown"')
+        ORG_EDITION=$(echo "$DETAILS" | jq -r '.result.edition // "unknown"')
+        USERNAME=$(echo "$DETAILS" | jq -r '.result.username // "unknown"')
+        INSTANCE_URL=$(echo "$DETAILS" | jq -r '.result.instanceUrl // "unknown"')
+        IS_SANDBOX=$(echo "$DETAILS" | jq -r '.result.isSandbox // false')
+        IS_SCRATCH=$(echo "$DETAILS" | jq -r '.result.isScratchOrg // false')
+
+        # Determine org type
+        if [ "$IS_SCRATCH" = "true" ]; then
+          ORG_TYPE="Scratch"
+        elif [ "$IS_SANDBOX" = "true" ]; then
+          ORG_TYPE="Sandbox"
+        else
+          ORG_TYPE="Production"
+        fi
+
+        # Set outputs
+        echo "org_id=$ORG_ID" >> $GITHUB_OUTPUT
+        echo "org_edition=$ORG_EDITION" >> $GITHUB_OUTPUT
+        echo "org_type=$ORG_TYPE" >> $GITHUB_OUTPUT
+        echo "username=$USERNAME" >> $GITHUB_OUTPUT
+        echo "instance_url=$INSTANCE_URL" >> $GITHUB_OUTPUT
+
+        # Display summary
+        echo "📊 Org Details:"
+        echo "  Type: $ORG_TYPE"
+        echo "  Edition: $ORG_EDITION"
+        echo "  Org ID: $ORG_ID"
+        echo "  Username: $USERNAME"
+        echo "  Instance: $INSTANCE_URL"
+
+    # --------------------------------------------------------------------------
+    # OPTIONAL TOOLING (with strict mode awareness)
+    # --------------------------------------------------------------------------
+    - name: Install sfdx-git-delta
+      if: inputs.install_delta == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        if ! sf plugins inspect sfdx-git-delta >/dev/null 2>&1; then
+          echo "📦 Installing sfdx-git-delta..."
+          echo y | sf plugins install sfdx-git-delta
+          echo "✅ sfdx-git-delta installed"
+        else
+          echo "✅ sfdx-git-delta already installed"
+        fi
+
+    - name: Install Salesforce Code Analyzer
+      if: inputs.install_scanner == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        if ! sf plugins inspect @salesforce/plugin-code-analyzer >/dev/null 2>&1; then
+          echo "📦 Installing @salesforce/plugin-code-analyzer..."
+          echo y | sf plugins install @salesforce/plugin-code-analyzer
+          echo "✅ Code Analyzer installed"
+        else
+          echo "✅ Code Analyzer already installed"
+        fi
+
+    - name: Install Custom Salesforce CLI Plugins
+      if: inputs.custom_sf_plugins != ''
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        echo "📦 Installing custom Salesforce CLI plugins..."
+
+        IFS=',' read -ra PLUGIN_LIST <<< "${{ inputs.custom_sf_plugins }}"
+        FAILED_PLUGINS=()
+        INSTALLED_PLUGINS=()
+        SKIPPED_PLUGINS=()
+
+        for plugin in "${PLUGIN_LIST[@]}"; do
+          # Trim whitespace
+          plugin=$(echo "$plugin" | xargs)
+          
+          # Skip empty entries
+          if [ -z "$plugin" ]; then
+            continue
+          fi
+          
+          # Validate plugin name format (alphanumeric, hyphens, underscores, @ for scopes)
+          if ! echo "$plugin" | grep -qE '^(@[a-zA-Z0-9-]+\/)?[a-zA-Z0-9@_-]+$'; then
+            echo "  ⚠️  Invalid plugin name format: '$plugin'"
+            echo "     Plugin names should match: [@scope/]plugin-name"
+            FAILED_PLUGINS+=("$plugin (invalid format)")
+            if [ "${{ inputs.strict }}" = "true" ]; then
+              exit 1
+            fi
+            continue
+          fi
+          
+          echo "  Installing: $plugin"
+          
+          # Check if already installed
+          if sf plugins inspect "$plugin" >/dev/null 2>&1; then
+            echo "    ✅ Already installed"
+            SKIPPED_PLUGINS+=("$plugin")
+            continue
+          fi
+          
+          # Attempt installation
+          if echo y | sf plugins install "$plugin" 2>&1; then
+            echo "    ✅ Installed successfully"
+            INSTALLED_PLUGINS+=("$plugin")
+          else
+            echo "    ❌ Failed to install"
+            FAILED_PLUGINS+=("$plugin")
+            if [ "${{ inputs.strict }}" = "true" ]; then
+              exit 1
+            fi
+          fi
+        done
+
+        # Summary
+        echo ""
+        echo "📊 Plugin Installation Summary:"
+        echo "   Installed: ${#INSTALLED_PLUGINS[@]}"
+        echo "   Already Present: ${#SKIPPED_PLUGINS[@]}"
+        echo "   Failed: ${#FAILED_PLUGINS[@]}"
+
+        if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
+          echo ""
+          echo "⚠️  Failed Plugins:"
+          printf '   - %s\n' "${FAILED_PLUGINS[@]}"
+          
+          if [ "${{ inputs.strict }}" = "true" ]; then
+            echo ""
+            echo "❌ Strict mode enabled: Failing workflow due to plugin errors"
+            exit 1
+          else
+            echo ""
+            echo "💡 Non-strict mode: Continuing despite failures"
+            echo "   Set strict: 'true' to fail on plugin errors"
+          fi
+        fi
+
+    - name: Install Prettier and plugins
+      if: inputs.install_prettier == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        if ! command -v prettier &> /dev/null; then
+          echo "📦 Installing Prettier with Salesforce plugins..."
+          npm install --global prettier prettier-plugin-apex @prettier/plugin-xml
+          echo "✅ Prettier installed"
+        else
+          echo "✅ Prettier already installed"
+        fi
+
+    - name: Install ESLint and plugins
+      if: inputs.install_eslint == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        if ! command -v eslint &> /dev/null; then
+          echo "📦 Installing ESLint with Salesforce plugins..."
+          npm install --global eslint @salesforce/eslint-config-lwc @lwc/eslint-plugin-lwc
+          echo "✅ ESLint installed"
+        else
+          echo "✅ ESLint already installed"
+        fi
+
+    - name: Install sfdx-lwc-jest
+      if: inputs.install_lwc_jest == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          set -e
+        fi
+
+        if ! npm list -g @salesforce/sfdx-lwc-jest &> /dev/null; then
+          echo "📦 Installing @salesforce/sfdx-lwc-jest..."
+          npm install --global @salesforce/sfdx-lwc-jest
+          echo "✅ sfdx-lwc-jest installed"
+        else
+          echo "✅ sfdx-lwc-jest already installed"
+        fi
+
+    # --------------------------------------------------------------------------
+    # FINAL STATUS
+    # --------------------------------------------------------------------------
+    - name: Environment Ready
+      shell: bash
+      run: |
+        echo "🎉 Salesforce environment is ready!"
+        echo ""
+        echo "Installed Tools:"
+        echo "  - Salesforce CLI: $(sf --version | head -n 1)"
+        [ "${{ inputs.install_delta }}" = "true" ] && echo "  - sfdx-git-delta: ✅" || true
+        [ "${{ inputs.install_scanner }}" = "true" ] && echo "  - Code Analyzer: ✅" || true
+        [ "${{ inputs.install_prettier }}" = "true" ] && echo "  - Prettier: ✅" || true
+        [ "${{ inputs.install_eslint }}" = "true" ] && echo "  - ESLint: ✅" || true
+        [ "${{ inputs.install_lwc_jest }}" = "true" ] && echo "  - LWC Jest: ✅" || true
+
+        if [ -n "${{ inputs.custom_sf_plugins }}" ]; then
+          echo "  - Custom plugins:"
+          IFS=',' read -ra PLUGIN_LIST <<< "${{ inputs.custom_sf_plugins }}"
+          for plugin in "${PLUGIN_LIST[@]}"; do
+            plugin=$(echo "$plugin" | xargs)
+            [ -n "$plugin" ] && echo "    • $plugin: ✅" || true
+          done
+        fi

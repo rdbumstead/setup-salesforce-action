@@ -1,5 +1,5 @@
 # ============================================================================
-# multi-org.yml
+# examples/multi-org.yml
 # ============================================================================
 name: Multi-Org Deployment
 
@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Development Org
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -22,7 +22,7 @@ jobs:
           alias: "dev"
 
       - name: Setup UAT Org
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -30,7 +30,7 @@ jobs:
           alias: "uat"
 
       - name: Setup Production Org
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}

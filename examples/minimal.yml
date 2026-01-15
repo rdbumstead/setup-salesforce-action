@@ -1,5 +1,5 @@
 # ============================================================================
-# minimal.yml
+# examples/minimal.yml
 # ============================================================================
 name: Minimal Salesforce Setup
 
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Salesforce
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}

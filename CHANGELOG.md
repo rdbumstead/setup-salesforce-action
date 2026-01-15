@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-15
+
+### Added - Cross-Platform Support 🌐
+
+- **Full Windows support** with PowerShell and Bash shell compatibility
+- **Full macOS support** with Homebrew integration
+- **OS-aware dependency management** (jq via apt/brew/choco)
+- **Platform-specific secure file handling** (chmod on Unix, icacls on Windows)
+- **Platform-specific caching paths** for optimal performance
+- **Comprehensive cross-platform testing** across Ubuntu, Windows, and macOS
+
+### Added - Enhanced Outputs 📊
+
+- **`source_flags` output** for multi-directory deployment workflows
+- **Automatic directory creation** for missing default directories (e.g., force-app)
+- **Better error messages** with actionable feedback
+- **Improved output variable consistency** across all platforms
+
+### Added - Custom Plugin Support 🔌
+
+- **`custom_sf_plugins` input** for installing any Salesforce CLI plugin
+- **Comma-separated list support** for multiple custom plugins
+- **Plugin validation** to prevent duplicate installations
+- **Flexible plugin management** alongside built-in plugin options
+
+### Changed - Improvements ⚡
+
+- **Enhanced caching** with platform-specific paths and keys
+- **Better retry logic** for network resilience (3 attempts with exponential backoff)
+- **Improved error handling** with strict mode support
+- **Source directory resolution** now handles missing directories gracefully
+- **Input validation** now provides clearer error messages
+- **Authentication step** refactored for better cross-platform compatibility
+
+### Performance 🚀
+
+- Setup time: ~25-55s (cached), ~1.5-3 min (first run)
+- Cache hit rate >95% across all platforms
+- Optimized for both GitHub-hosted and self-hosted runners
+- Platform-specific optimizations (fastest on Linux, fully functional on all)
+
+### Documentation 📖
+
+- **New: PLATFORM_SUPPORT.md** - Comprehensive cross-platform guide
+- **New: TESTING_STRATEGY.md** - Complete testing documentation
+- **New: QUICKSTART.md** - Get started in 15 minutes
+- **New: TROUBLESHOOTING.md** - Enhanced troubleshooting guide
+- **New: UPGRADE.md** - Quick v1→v2 upgrade reference
+- **Enhanced: README.md** - Updated with v2 features and examples
+- **Enhanced: FILE_SUMMARY.md** - Complete package overview
+- **Updated: Performance Metrics** - Revised execution times based on latest benchmarks
+- **Added: Windows Warnings** - Added performance expectations for Windows runners
+
+### Testing 🧪
+
+- **New: Cross-platform test suite** (`test-cross-platform.yml`)
+- **Enhanced: Quick tests** (`test.yml`) for rapid development feedback
+- **Matrix testing** across Ubuntu, Windows, macOS with Node 18 and 20
+- **7 comprehensive test scenarios** in quick tests
+- **5 comprehensive test jobs** in cross-platform tests
+- **Cache performance testing** to ensure optimization
+- **Error handling validation** across all platforms
+
+### Migration Notes ⬆️
+
+- **100% backward compatible** with v1 - no breaking changes
+- Simply change `@v1` to `@v2` in your workflows
+- All v1 inputs and outputs continue to work
+- New features are opt-in via new input parameters
+- See [MIGRATION_V1_TO_V2.md](MIGRATION_V1_TO_V2.md) for details
+
+---
+
 ## [1.1.1] - 2026-01-14
 
 ### Documentation
@@ -75,6 +148,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance comparison tables
 - Complete input reference
 
+---
+
+[2.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.0
 [1.1.1]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v1.1.1
 [1.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v1.1.0
 [1.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v1.0.0
