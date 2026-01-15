@@ -305,7 +305,7 @@ source_dirs: "force-app,packages/core,packages/utils"
 
 - � [Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
 - 💬 [Discussions](https://github.com/rdbumstead/setup-salesforce-action/discussions)
-- ⭐ [GitHub Marketplace](https://github.com/marketplace/actions/setup-salesforce-action)
+- ⭐ [GitHub Marketplace](https://github.com/marketplace/actions/setup-salesforce-cli)
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "setup-salesforce-action",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Enterprise-grade Salesforce CLI setup action",
   "main": "index.js",
   "scripts": {
