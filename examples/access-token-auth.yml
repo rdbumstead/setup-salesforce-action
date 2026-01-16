@@ -1,0 +1,38 @@
+name: Access Token Authentication
+# Example workflow using Access Token authentication method (v2.1+)
+# For advanced use cases - access tokens are short-lived
+
+on:
+  workflow_dispatch:
+    inputs:
+      access_token:
+        description: "Salesforce Access Token"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce (Access Token)
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          auth_method: "access-token"
+          access_token: ${{ inputs.access_token }}
+          instance_url: "https://login.salesforce.com" # Or your custom domain
+          alias: "target-org"
+
+      - name: Verify Connection
+        run: sf org display --target-org target-org
+
+      - name: Deploy
+        run: sf project deploy start --source-dir force-app --target-org target-org
+# ⚠️ WARNING: Access tokens are short-lived (typically 2 hours)
+# This method is recommended only for:
+# - Manual/ad-hoc deployments
+# - Integration with external token providers
+# - Testing/development scenarios
+#
+# For production CI/CD, use JWT or SFDX Auth URL authentication

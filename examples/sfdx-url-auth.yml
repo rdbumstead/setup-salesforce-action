@@ -1,0 +1,33 @@
+name: SFDX Auth URL Authentication
+# Example workflow using SFDX Auth URL authentication method (v2.1+)
+# This is simpler than JWT - no certificate required
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce (SFDX Auth URL)
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          auth_method: "sfdx-url"
+          sfdx_auth_url: ${{ secrets.SFDX_AUTH_URL }}
+          alias: "production"
+
+      - name: Verify Connection
+        run: sf org display --target-org production
+
+      - name: Deploy
+        run: sf project deploy start --source-dir force-app --target-org production
+# How to get your SFDX Auth URL:
+# sf org display --target-org YourOrg --verbose --json | jq -r '.result.sfdxAuthUrl'
+#
+# Store this value as a secret in your repository:
+# Repository → Settings → Secrets and variables → Actions → New repository secret
+# Name: SFDX_AUTH_URL
+# Value: force://...your auth url...

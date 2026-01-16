@@ -6,7 +6,7 @@
 [![Cross Platform Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **📢 v2.0.0 Released!** Now with full Windows and macOS support!
+> **📢 v2.1.0 Released!** Now with multiple authentication methods!
 > [Migration Guide](docs/MIGRATION_V1_TO_V2.md) | [What's New](#-whats-new-in-v2)
 
 > Flexible, fast, and production-ready Salesforce CLI setup with JWT authentication and optional tooling.
@@ -131,22 +131,28 @@ New `source_flags` output for seamless multi-directory workflows:
 
 _Required unless `skip_auth: 'true'` is set_
 
-| Name        | Description                                               |
-| ----------- | --------------------------------------------------------- |
-| `jwt_key`   | JWT private key for authentication (entire file contents) |
-| `client_id` | Connected App consumer key                                |
-| `username`  | Salesforce username                                       |
+| Name            | Description                                                           |
+| --------------- | --------------------------------------------------------------------- |
+| `auth_method`   | Authentication method: `jwt` (default), `sfdx-url`, or `access-token` |
+| `jwt_key`       | JWT private key (required for `jwt` auth)                             |
+| `client_id`     | Connected App consumer key (required for `jwt` and `access-token`)    |
+| `username`      | Salesforce username (required for `jwt` auth)                         |
+| `sfdx_auth_url` | SFDX Auth URL (required for `sfdx-url` auth)                          |
+| `access_token`  | Salesforce Access Token (required for `access-token` auth)            |
+| `instance_url`  | Salesforce instance URL (required for `jwt` and `access-token`)       |
 
 ### Configuration
 
-| Name           | Default     | Description                        |
-| -------------- | ----------- | ---------------------------------- |
-| `is_dev_hub`   | `false`     | Set as default Dev Hub             |
-| `node_version` | `20`        | Node.js version to use             |
-| `skip_auth`    | `false`     | Skip JWT authentication (CLI only) |
-| `alias`        | `TargetOrg` | Alias name for authenticated org   |
-| `source_dirs`  | `force-app` | Comma-separated source directories |
-| `strict`       | `false`     | Fail on optional tool errors       |
+| Name                    | Default     | Description                                      |
+| ----------------------- | ----------- | ------------------------------------------------ |
+| `is_dev_hub`            | `false`     | Set as default Dev Hub                           |
+| `node_version`          | `20`        | Node.js version to use                           |
+| `cli_version`           | `latest`    | Salesforce CLI version (or explicit like 2.x)    |
+| `cli_version_for_cache` | `minor`     | Cache key granularity: `major`, `minor`, `exact` |
+| `skip_auth`             | `false`     | Skip authentication (CLI only)                   |
+| `alias`                 | `TargetOrg` | Alias name for authenticated org                 |
+| `source_dirs`           | `force-app` | Comma-separated source directories               |
+| `strict`                | `false`     | Fail on optional tool errors                     |
 
 ### Salesforce Plugins
 
@@ -173,6 +179,8 @@ _Required unless `skip_auth: 'true'` is set_
 | `org_type`       | Organization type (Production, Sandbox, Scratch)    |
 | `username`       | Authenticated username                              |
 | `instance_url`   | Org instance URL                                    |
+| `api_version`    | Salesforce API version for the org                  |
+| `auth_performed` | Whether authentication was performed (true/false)   |
 | `sf_cli_version` | Installed Salesforce CLI version                    |
 | `source_flags`   | Resolved source directory flags for SF CLI commands |
 
@@ -590,6 +598,71 @@ jobs:
       - name: Deploy All Directories
         run: sf project deploy start ${{ steps.setup.outputs.source_flags }}
 ```
+
+</details>
+
+<details>
+<summary><b>SFDX Auth URL Authentication (v2.1+)</b></summary>
+
+Authenticate using SFDX Auth URL (simpler than JWT, no certificate needed):
+
+```yaml
+name: SFDX Auth URL Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce (SFDX Auth URL)
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          auth_method: "sfdx-url"
+          sfdx_auth_url: ${{ secrets.SFDX_AUTH_URL }}
+
+      - name: Deploy
+        run: sf project deploy start --source-dir force-app
+```
+
+**To get your SFDX Auth URL:**
+
+```bash
+sf org display --target-org YourOrg --verbose --json | jq -r '.result.sfdxAuthUrl'
+```
+
+</details>
+
+<details>
+<summary><b>Access Token Authentication (v2.1+)</b></summary>
+
+Authenticate using a direct access token (for advanced use cases):
+
+```yaml
+name: Access Token Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Salesforce (Access Token)
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          auth_method: "access-token"
+          access_token: ${{ secrets.SF_ACCESS_TOKEN }}
+          instance_url: "https://mycompany.my.salesforce.com"
+
+      - name: Deploy
+        run: sf project deploy start --source-dir force-app
+```
+
+> ⚠️ **Warning**: Access tokens are short-lived. Use JWT or SFDX Auth URL for production workflows.
 
 </details>
 

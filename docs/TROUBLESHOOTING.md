@@ -248,6 +248,67 @@ Error: invalid_grant: authentication failure
 
 ---
 
+### SFDX Auth URL Issues (v2.1+)
+
+**Problem**: SFDX Auth URL authentication fails
+
+```
+Error: Invalid SFDX Auth URL format
+```
+
+**Checklist**:
+
+- [ ] Auth URL starts with `force://`
+- [ ] Auth URL was copied completely
+- [ ] No extra whitespace or line breaks in secret
+- [ ] The org's session is still valid
+
+**Solution to get a fresh Auth URL**:
+
+```bash
+# Authenticate first (if needed)
+sf org login web --alias YourOrg
+
+# Get the SFDX Auth URL
+sf org display --target-org YourOrg --verbose --json | jq -r '.result.sfdxAuthUrl'
+```
+
+Store the full URL as a secret named `SFDX_AUTH_URL`.
+
+---
+
+### Access Token Issues (v2.1+)
+
+**Problem**: Access token authentication fails
+
+```
+Error: INVALID_SESSION_ID: Session expired or invalid
+```
+
+**Common causes**:
+
+1. **Token expired** - Access tokens are short-lived (typically 2 hours)
+2. **Instance URL mismatch** - Token domain doesn't match instance_url
+3. **Token revoked** - Session was invalidated
+
+**Solution**:
+
+1. **Generate a fresh token** just before running the workflow
+2. **Use JWT or SFDX Auth URL** for production CI/CD (recommended)
+3. **Verify instance URL matches the token's org**
+
+```yaml
+- uses: rdbumstead/setup-salesforce-action@v2
+  with:
+    auth_method: "access-token"
+    access_token: ${{ secrets.SF_ACCESS_TOKEN }}
+    instance_url: "https://your-org.my.salesforce.com" # Must match token
+```
+
+> ⚠️ **Note**: Access tokens are recommended only for manual/ad-hoc deployments, not production CI/CD.
+
+---
+
 ## Caching Issues
 
 ### Cache Not Working

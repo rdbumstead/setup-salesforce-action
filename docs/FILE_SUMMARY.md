@@ -21,8 +21,8 @@ This document provides a comprehensive overview of all files in the enterprise-g
 - ✅ Strict mode support
 - ✅ CLI version pinning
 
-**Inputs**: 15+ configuration options
-**Outputs**: 6 org/environment details
+**Inputs**: 19+ configuration options
+**Outputs**: 8 org/environment details
 **Supports**: Node 18, 20, 22
 
 ---

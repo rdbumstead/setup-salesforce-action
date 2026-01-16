@@ -189,14 +189,14 @@ The action uses platform-aware caching:
 ### Cache Key Format
 
 ```
-sf-v2-{OS}-node{version}-cli{version}-tools{hash}
+sf-v3-{OS}-node{version}-cli{version}-tools{hash}
 ```
 
 **Example Keys:**
 
-- `sf-v2-Linux-node20-cli2.30.8-toolsabcd1234`
-- `sf-v2-Windows-node20-cli2.30.8-toolsabcd1234`
-- `sf-v2-macOS-node20-cli2.30.8-toolsabcd1234`
+- `sf-v3-Linux-node20-cli2.30.8-toolsabcd1234`
+- `sf-v3-Windows-node20-cli2.30.8-toolsabcd1234`
+- `sf-v3-macOS-node20-cli2.30.8-toolsabcd1234`
 
 This ensures each OS maintains its own cache while sharing the same configuration.
 

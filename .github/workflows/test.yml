@@ -271,6 +271,111 @@ jobs:
           echo "✅ Cache behavior test completed"
           echo "Check action logs to verify cache hit on second run"
 
+  test-cache-granularity:
+    name: Cache Granularity (v2.1)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Major Cache Granularity
+        id: setup-major
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "major"
+
+      - name: Setup with Minor Cache Granularity
+        id: setup-minor
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "minor"
+
+      - name: Setup with Exact Cache Granularity
+        id: setup-exact
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "exact"
+
+      - name: Verify
+        run: |
+          echo "✅ Cache granularity test completed"
+          echo "All three granularity options accepted: major, minor, exact"
+
+  test-sfdx-url-auth:
+    name: SFDX Auth URL (v2.1)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rdbumstead' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with SFDX Auth URL
+        id: setup-sfdx-url
+        uses: ./
+        with:
+          auth_method: "sfdx-url"
+          sfdx_auth_url: ${{ secrets.SFDX_AUTH_URL }}
+
+      - name: Verify SFDX URL Auth
+        run: |
+          echo "Testing SFDX Auth URL authentication..."
+          sf org display
+
+          echo "Verifying outputs..."
+          echo "Org ID: ${{ steps.setup-sfdx-url.outputs.org_id }}"
+          echo "Auth Performed: ${{ steps.setup-sfdx-url.outputs.auth_performed }}"
+          echo "API Version: ${{ steps.setup-sfdx-url.outputs.api_version }}"
+
+          if [ -z "${{ steps.setup-sfdx-url.outputs.org_id }}" ]; then
+            echo "❌ org_id output is empty"
+            exit 1
+          fi
+
+          echo "✅ SFDX Auth URL authentication successful"
+
+  test-new-outputs:
+    name: New Outputs (v2.1)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rdbumstead' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce
+        id: setup-sf
+        uses: ./
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+
+      - name: Verify New Outputs
+        run: |
+          echo "Testing new v2.1 outputs..."
+
+          echo "api_version: ${{ steps.setup-sf.outputs.api_version }}"
+          echo "auth_performed: ${{ steps.setup-sf.outputs.auth_performed }}"
+
+          # Verify api_version is not empty
+          if [ -z "${{ steps.setup-sf.outputs.api_version }}" ]; then
+            echo "❌ api_version output is empty"
+            exit 1
+          fi
+
+          # Verify auth_performed is true
+          if [ "${{ steps.setup-sf.outputs.auth_performed }}" != "true" ]; then
+            echo "❌ auth_performed should be 'true'"
+            exit 1
+          fi
+
+          echo "✅ New outputs verified"
+
   test-network-retry:
     name: Network Retry Logic
     runs-on: ubuntu-latest
@@ -376,6 +481,9 @@ jobs:
       - test-custom-alias
       - test-error-handling
       - test-cache-behavior
+      - test-cache-granularity
+      - test-sfdx-url-auth
+      - test-new-outputs
       - test-network-retry
       - test-invalid-plugins
       - test-source-flags
@@ -463,6 +571,32 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### v2.1 Features" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test-cache-granularity.result }}" = "success" ]; then
+            echo "✅ **Cache Granularity**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Cache Granularity**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.test-sfdx-url-auth.result }}" = "success" ]; then
+            echo "✅ **SFDX Auth URL**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.test-sfdx-url-auth.result }}" = "skipped" ]; then
+            echo "⏭️ **SFDX Auth URL**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **SFDX Auth URL**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.test-new-outputs.result }}" = "success" ]; then
+            echo "✅ **New Outputs (v2.1)**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.test-new-outputs.result }}" = "skipped" ]; then
+            echo "⏭️ **New Outputs (v2.1)**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **New Outputs (v2.1)**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "💡 **Note**: Some tests require secrets and will be skipped in forks." >> $GITHUB_STEP_SUMMARY
@@ -499,6 +633,11 @@ jobs:
 
           if [ "${{ needs.test-source-flags.result }}" != "success" ]; then
             echo "❌ Critical test failed: Source Flags"
+            CRITICAL_FAILED=true
+          fi
+
+          if [ "${{ needs.test-cache-granularity.result }}" != "success" ]; then
+            echo "❌ Critical test failed: Cache Granularity"
             CRITICAL_FAILED=true
           fi
 

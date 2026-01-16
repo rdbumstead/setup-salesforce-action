@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-15
+
+### Added - Multiple Authentication Methods 🔐
+
+- **SFDX Auth URL authentication** (`auth_method: 'sfdx-url'`)
+
+  - Simpler alternative to JWT - no certificate required
+  - Uses refresh token from SFDX Auth URL
+  - New input: `sfdx_auth_url`
+
+- **Access Token authentication** (`auth_method: 'access-token'`)
+
+  - Direct access token authentication for advanced use cases
+  - New input: `access_token`
+  - Warning: Access tokens are short-lived
+
+- **New `auth_method` input** to select authentication type
+  - Options: `jwt` (default), `sfdx-url`, `access-token`
+  - Backward compatible - existing JWT workflows work unchanged
+
+### Added - Cache Granularity Control ⚡
+
+- **New `cli_version_for_cache` input** to control cache key granularity
+  - `major` - Cache busts only on major CLI version changes
+  - `minor` - Cache busts on minor version changes (default)
+  - `exact` - Cache busts on every CLI version change
+  - Improves cache hit rates for teams using `cli_version: 'latest'`
+
+### Added - New Outputs 📊
+
+- **`api_version`** - Salesforce API version for the authenticated org
+- **`auth_performed`** - Whether authentication was performed (`true`/`false`)
+
+### Changed - Improvements
+
+- Cache key format updated to `sf-v3-*` for new cache strategy
+- Improved sandbox and scratch org detection logic
+- Better logging with tree-formatted output
+- Environment variables used for sensitive auth data (more secure)
+
+### Fixed 🐞
+
+- Custom plugin installation loop now correctly installs plugins
+
+---
+
 ## [2.0.1] - 2026-01-15
 
 ### Fixed 🐞
@@ -156,6 +202,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.1.0
+[2.0.1]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.1
 [2.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.0
 [1.1.1]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v1.1.1
 [1.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v1.1.0

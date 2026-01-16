@@ -185,6 +185,26 @@ If you need custom SF CLI plugins:
     custom_sf_plugins: "sfdx-hardis,your-plugin"
 ```
 
+### Alternative Authentication Methods (v2.1+)
+
+Don't want to set up JWT certificates? Use **SFDX Auth URL** instead:
+
+```yaml
+- name: Setup Salesforce
+  uses: rdbumstead/setup-salesforce-action@v2
+  with:
+    auth_method: "sfdx-url"
+    sfdx_auth_url: ${{ secrets.SFDX_AUTH_URL }}
+```
+
+**To get your SFDX Auth URL:**
+
+```bash
+sf org display --target-org YourOrg --verbose --json | jq -r '.result.sfdxAuthUrl'
+```
+
+Store this as a GitHub secret named `SFDX_AUTH_URL`.
+
 ### Use Different Platforms
 
 Run on Windows or macOS:
