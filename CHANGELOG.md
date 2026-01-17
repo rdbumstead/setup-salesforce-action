@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 New Features - Performance & Caching
 
-- **OS-Specific Caching** - Cache paths are now partitioned by operating system (Linux/macOS/Windows) to prevent cross-platform corruption and improve hit rates.
-- **Optimized Version Resolution** - Uses `npm view` to resolve "latest" versions 10x faster than a full install, with 10s timeout protection against network hangs.
-- **Smart Hash Detection** - Automatically uses `sha256sum` or `shasum -a 256` depending on the runner OS.
+- **OS-Specific Caching** - Cache paths are now partitioned by operating system (Linux/macOS/Windows) to prevent cross-platform corruption and improve hit rates
+- **Optimized Version Resolution** - Uses `npm view` to resolve "latest" versions 10x faster than a full install, with 10s timeout protection against network hangs
+- **Smart Hash Detection** - Automatically uses `sha256sum` or `shasum -a 256` depending on the runner OS
+- **CLI Health Verification** - Automatic health check after CLI installation validates core plugins are loaded and functional
+  - Detects broken installations immediately instead of failing later in workflows
+  - Adds ~100ms overhead for significantly improved reliability
+  - Runs inline with installation step for fast feedback
 
 ### 🛡️ Reliability & Retries
 
@@ -20,27 +24,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `sfdx-git-delta`
   - `@salesforce/plugin-code-analyzer`
   - Custom plugins (each plugin retries individually)
+- **Improved Cache Fallback** - When npm registry is unreachable, cache keys now use monthly time-based rotation (`latest-YYYY-MM`) instead of static "latest"
+  - Prevents indefinite cache staleness during npm outages
+  - Automatically rotates monthly to ensure fresh CLI versions
+  - Provides clearer error messaging about fallback behavior
 
 ### Added ➕
 
-- **Formal Access Token Support** - Added explicit support for `auth_method: access-token` using the `sf org login access-token` command (replaces legacy logic).
-- **Access Token Default** - `allow_access_token_auth` now defaults to `true`, making this a safe non-breaking change.
-- **New Tests** (`test-access-token-auth`, `test-multiple-plugins`) to validate complex scenarios.
+- **Formal Access Token Support** - Added explicit support for `auth_method: access-token` using the `sf org login access-token` command (replaces legacy logic)
+- **Access Token Default** - `allow_access_token_auth` now defaults to `true`, making this a safe non-breaking change
+- **New Tests** (`test-access-token-auth`, `test-multiple-plugins`) to validate complex scenarios
+- **Enhanced Testing** - Added comprehensive CLI health checks to critical and cross-platform test suites
+  - Health checks now run on all platforms (Ubuntu, macOS, Windows)
+  - Validates CLI version, core plugins, help system, config commands, and org listing
+  - Total test coverage increased from ~90% to ~95%
 
 ### Changed 🔧
 
-- **Test Architecture Overhaul** - Replaced monolithic "Quick Tests" (`test.yml`) with 4 dedicated workflows (`test-critical`, `test-plugins`, `test-auth`, `test-cross-platform`).
-- **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins.
-- **Better CLI Validation** - Switched verification commands to `sf plugins` to ensure core plugin availability.
-- **Refactored Retry Tests** - Renamed `test-network-retry` to `test-cli-install-retry` for clarity.
+- **Test Architecture Overhaul** - Replaced monolithic "Quick Tests" (`test.yml`) with 4 dedicated workflows (`test-critical`, `test-plugins`, `test-auth`, `test-cross-platform`)
+- **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins
+- **Better CLI Validation** - Switched verification commands to `sf plugins` to ensure core plugin availability
+- **Refactored Retry Tests** - Renamed `test-network-retry` to `test-cli-install-retry` for clarity
+- **Enhanced Error Messages** - Source directory validation now includes actionable troubleshooting tips
+  - Clarifies that `force-app` is auto-created while custom directories must exist
+  - Suggests checking for typos in `source_dirs` input
+  - Reduces support burden with self-service guidance
 
 ### Fixed 🐞
 
-- **Windows Permissions** - Fixed file permission warnings for temporary auth files (`authurl.txt`, `access_token.txt`) on Windows runners.
-- **Instance URL Handling** - Auth logic now correctly strips trailing slashes from `instance_url` to prevent connection errors.
-- **Custom Plugin Loops** - Fixed bash iteration logic to correctly install multiple comma-separated plugins.
-- **Source Flags** - Output verification now strictly checks for the `--source-dir` format.
-- **Dependencies** - `authurl.txt` and `access_token.txt` added to `.gitignore`.
+- **Windows Permissions** - Fixed file permission warnings for temporary auth files (`authurl.txt`, `access_token.txt`) on Windows runners
+- **Instance URL Handling** - Auth logic now correctly strips trailing slashes from `instance_url` to prevent connection errors
+- **Custom Plugin Loops** - Fixed bash iteration logic to correctly install multiple comma-separated plugins
+- **Source Flags** - Output verification now strictly checks for the `--source-dir` format
+- **Dependencies** - `authurl.txt` and `access_token.txt` added to `.gitignore`
+- **Test Consistency** - Standardized boolean input format across all test workflows (`skip_auth: "true"` instead of mixed `true`/`"true"`)
 
 ---
 
