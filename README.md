@@ -125,6 +125,28 @@ Full documentation lives in `/docs`:
 
 ---
 
+## 🙏 Credits & Acknowledgments
+
+This action orchestrates the installation of several best-in-class open-source tools. We recommend starring their repositories and reviewing their specific documentation:
+
+- **[sfdx-git-delta](https://github.com/scolladon/sfdx-git-delta)** by [Sebastien Colladon](https://github.com/scolladon)
+  _Used for the `install_delta` feature. This tool is essential for generating delta deployments._
+- **[Salesforce Code Analyzer](https://forcedotcom.github.io/sfdx-scanner/)** by Salesforce
+  _Used for the `install_scanner` feature. Provides PMD, ESLint, and RetireJS scanning._
+- **[Prettier Plugin Apex](https://github.com/dangmai/prettier-plugin-apex)**
+  _Used for the `install_prettier` feature to format Apex code._
+- **[LWC ESLint Plugin](https://github.com/salesforce/eslint-plugin-lwc)**
+  _Used for the `install_eslint` feature to lint Lightning Web Components._
+
+### Tested With
+
+We explicitly verify compatibility with popular ecosystem plugins in our [test suite](.github/workflows/test-plugins.yml), including:
+
+- **[sfdx-hardis](https://github.com/sfdx-hardis/sfdx-hardis)** (CI/CD orchestration)
+- **[sfpowerscripts](https://github.com/dxatscale/sfpowerscripts)** (Release management)
+
+---
+
 ## 🤝 Support
 
 - 🐞 **Issues**: [GitHub Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
