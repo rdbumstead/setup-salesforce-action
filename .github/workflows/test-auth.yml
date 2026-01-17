@@ -192,6 +192,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Tools (for Minting)
+        uses: ./
+        with:
+          skip_auth: "true"
+
       - name: Mint short lived access token
         id: mint-token
         shell: bash

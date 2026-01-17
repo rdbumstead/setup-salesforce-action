@@ -50,7 +50,7 @@ jobs:
           echo "Verifying ${{ matrix.plugin.name }}..."
           PLUGIN="${{ matrix.plugin.name }}"
 
-          if sf plugins --json | jq -e '.result[] | select(.name == "'"$PLUGIN"'")' > /dev/null; then
+          if sf plugins --json | jq -e '.plugins[] | select(.name == "'"$PLUGIN"'")' > /dev/null; then
             echo "✅ $PLUGIN installed"
           else
             echo "❌ $PLUGIN not found"
@@ -84,7 +84,7 @@ jobs:
           EXPECTED_PLUGINS=("sfdx-hardis" "@salesforce/plugin-packaging" "@salesforce/plugin-data")
 
           for plugin in "${EXPECTED_PLUGINS[@]}"; do
-            if sf plugins --json | jq -e '.result[] | select(.name == "'"$plugin"'")' > /dev/null; then
+            if sf plugins --json | jq -e '.plugins[] | select(.name == "'"$plugin"'")' > /dev/null; then
               echo "✅ $plugin installed"
             else
               echo "❌ $plugin not found"
@@ -134,7 +134,7 @@ jobs:
           echo "Checking Code Analyzer..."
 
           # Code Analyzer can appear as @salesforce/plugin-code-analyzer or code-analyzer
-          if sf plugins --json | jq -e '.result[] | select(.name | test("code-analyzer"))' > /dev/null; then
+          if sf plugins --json | jq -e '.plugins[] | select(.name | test("code-analyzer"))' > /dev/null; then
             echo "✅ code-analyzer installed"
           else
             echo "❌ code-analyzer not found"
@@ -163,7 +163,7 @@ jobs:
         run: |
           echo "Checking sfdx-git-delta..."
 
-          if sf plugins --json | jq -e '.result[] | select(.name | test("sfdx-git-delta"))' > /dev/null; then
+          if sf plugins --json | jq -e '.plugins[] | select(.name | test("sfdx-git-delta"))' > /dev/null; then
             echo "✅ sfdx-git-delta installed"
           else
             echo "❌ sfdx-git-delta not found"
