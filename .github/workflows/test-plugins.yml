@@ -48,7 +48,7 @@ jobs:
           echo "Verifying ${{ matrix.plugin.name }}..."
           PLUGIN="${{ matrix.plugin.name }}"
 
-          if sf plugins --json | jq -e '.plugins[] | select(.name == "'"$PLUGIN"'")' > /dev/null; then
+          if sf plugins --json | jq -e '.[] | select(.name == "'"$PLUGIN"'")' > /dev/null; then
             echo "✅ $PLUGIN installed"
           else
             echo "❌ $PLUGIN not found"
@@ -80,7 +80,7 @@ jobs:
           echo "Checking plugins installed..."
 
           # Verify community plugin was installed
-          if sf plugins --json | jq -e '.plugins[] | select(.name == "sfdx-hardis")' > /dev/null; then
+          if sf plugins --json | jq -e '.[] | select(.name == "sfdx-hardis")' > /dev/null; then
             echo "✅ sfdx-hardis installed"
           else
             echo "❌ sfdx-hardis not found"
@@ -88,7 +88,7 @@ jobs:
           fi
 
           # Verify bundled core plugins are present (they're always there)
-          if sf plugins --json | jq -e '.plugins[] | select(.name | test("plugin-data"))' > /dev/null; then
+          if sf plugins --json | jq -e '.[] | select(.name | test("plugin-data"))' > /dev/null; then
             echo "✅ plugin-data present (bundled)"
           else
             echo "❌ plugin-data not found"
@@ -132,7 +132,7 @@ jobs:
           echo "Checking Code Analyzer..."
 
           # Code Analyzer can appear as @salesforce/plugin-code-analyzer or code-analyzer
-          if sf plugins --json | jq -e '.plugins[] | select(.name | test("code-analyzer"))' > /dev/null; then
+          if sf plugins --json | jq -e '.[] | select(.name | test("code-analyzer"))' > /dev/null; then
             echo "✅ code-analyzer installed"
           else
             echo "❌ code-analyzer not found"
@@ -161,7 +161,7 @@ jobs:
         run: |
           echo "Checking sfdx-git-delta..."
 
-          if sf plugins --json | jq -e '.plugins[] | select(.name | test("sfdx-git-delta"))' > /dev/null; then
+          if sf plugins --json | jq -e '.[] | select(.name | test("sfdx-git-delta"))' > /dev/null; then
             echo "✅ sfdx-git-delta installed"
           else
             echo "❌ sfdx-git-delta not found"
