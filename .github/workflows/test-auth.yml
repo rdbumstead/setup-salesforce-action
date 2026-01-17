@@ -236,9 +236,6 @@ jobs:
         run: |
           echo "🔍 Verifying access token authentication..."
 
-          # Clear any pre-existing default org to ensure isolation
-          sf config unset target-org --global 2>/dev/null || true
-
           sf org display --target-org AccessTokenOrg
 
           echo ""
