@@ -1,6 +1,9 @@
 # ============================================================================
 # examples/lwc-testing.yml
 # ============================================================================
+# Example workflow for running LWC unit tests using @salesforce/sfdx-lwc-jest
+# Includes coverage reporting
+
 name: LWC Unit Tests
 
 on:
@@ -32,6 +35,6 @@ jobs:
         run: npm run test:unit:coverage
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v2
         with:
           files: ./coverage/lcov.info

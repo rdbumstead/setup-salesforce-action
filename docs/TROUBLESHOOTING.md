@@ -89,53 +89,17 @@ install_delta: "true"
 
 ## Authentication Issues
 
-### JWT Authentication Fails
+### External Client Apps Not Enabled (Winter '25 and Later)
 
-**Problem**: Authentication fails with "invalid JWT"
-
-```
-Error: JWT validation failed
-```
-
-**Checklist**:
-
-- [ ] JWT key format is correct (begins with `-----BEGIN RSA PRIVATE KEY-----`)
-- [ ] No extra whitespace or line breaks in secret
-- [ ] Certificate uploaded to Connected App matches the key
-- [ ] Client ID (Consumer Key) is correct
-- [ ] Username is correct
-- [ ] Instance URL is correct (`login.salesforce.com` for prod, `test.salesforce.com` for sandbox)
-
-**Solution**:
-
-```bash
-# Verify JWT key format locally
-cat server.key | head -1
-# Should show: -----BEGIN RSA PRIVATE KEY-----
-
-# Check for line ending issues
-cat server.key | file -
-# Should NOT show "with CRLF line terminators"
-```
-
-**Fix for Windows line endings**:
-
-```bash
-dos2unix server.key
-```
-
----
-
-### External Client Apps Not Enabled (Winter '25+)
-
-**Problem**: Authentication fails with "Connected App is not authorized"
+**Problem**: Authentication fails with "Connected App is not authorized" or "client identifier invalid"
 
 ```
 Error: The client application is not authorized to access this organization
 Error: invalid_client_id: client identifier invalid
+Error: grant type not supported
 ```
 
-**Cause**: Winter '25+ orgs require External Client Apps to be enabled before Connected Apps can authenticate via JWT.
+**Cause**: Salesforce orgs on the Winter '25 release (October 2024) or later require External Client Apps to be enabled for JWT authentication.
 
 **Solution**:
 
@@ -148,87 +112,180 @@ Error: invalid_client_id: client identifier invalid
    → Save
    ```
 
-2. **Verify your Connected App settings**:
+2. **Create or migrate to External Client App** (recommended):
+
+   ```
+   Setup → Quick Find → "External Client Apps"
+   → New
+   → Name: "GitHub Actions CI"
+   → Enable OAuth Settings
+   → Use digital signatures (upload certificate)
+   → Add OAuth scopes: api, refresh_token, offline_access
+   → Save
+   → Copy Consumer Key
+   ```
+
+3. **If using existing Connected App**, verify policies:
 
    ```
    Setup → App Manager → [Your Connected App]
    → Edit Policies
    → OAuth Policies → Permitted Users: "All users may self-authorize"
+   → IP Relaxation: "Relax IP restrictions"
    → Save
    ```
 
-3. **Wait 2-10 minutes** for the changes to propagate
+4. **Wait 2-10 minutes** for the changes to propagate
 
-4. **Retry your workflow**
+5. **Update your GitHub secrets** if you created a new External Client App:
+
+   - `SFDX_CLIENT_ID` = New Consumer Key from External Client App
+
+6. **Retry your workflow**
 
 **Reference**: [Salesforce Winter '25 Release Notes](https://help.salesforce.com/s/articleView?id=release-notes.rn_security_external_client_apps.htm)
 
 ---
 
-### Cannot Create Connected App (Winter '25+)
+### Cannot Create External Client App
 
-**Problem**: "New Connected App" button is grayed out or missing
+**Problem**: "New" button is grayed out in External Client Apps or you get a permissions error
 
 ```
-Error: You don't have permission to create Connected Apps
+Error: You don't have permission to create External Client Apps
+Error: This feature is not enabled for your organization
 ```
 
 **Solutions**:
 
-**Option 1: Enable External Client Apps First**
+**Option 1: Enable the Feature First**
 
 ```
 Setup → Quick Find → "External Client Apps"
 → Settings
 → Toggle ON "Enable External Client Apps"
 → Save
-→ Return to App Manager → New Connected App (now available)
+→ Return to External Client Apps → New (now available)
 ```
 
 **Option 2: Check User Permissions**
 
-- Ensure you have "Customize Application" permission
-- Or "Manage Connected Apps" permission
+Required permissions:
+
+- ✅ "Customize Application" permission
+- ✅ OR "Manage External Client Apps" permission
 - System Administrator profile has these by default
 
-**Option 3: Create External Client App Instead** (recommended)
+**Option 3: Use Connected App Instead (Legacy)**
 
-As of Winter '25, External Client Apps are the recommended approach:
+If your org is on a pre-Winter '25 release, you can use traditional Connected Apps:
 
 ```
-Setup → Quick Find → "External Client Apps"
-→ New
-→ Fill in app details
-→ Enable OAuth Settings (same as Connected App)
-→ Use digital signatures
-→ Upload certificate
-→ Add OAuth scopes: api, refresh_token, offline_access
-→ Save
+Setup → App Manager → New Connected App
+→ Follow same OAuth configuration
+→ Authentication works identically
 ```
-
-External Client Apps work identically with this action - just use the Client ID and JWT key as normal.
-
-**Benefits of External Client Apps:**
-
-- Enhanced security controls
-- Better audit logging
-- Recommended by Salesforce for CI/CD
-- Same authentication flow
 
 ---
 
-## 🆕 Winter '25 Changes Quick Reference
+### JWT Authentication Fails
 
-| Issue                          | Solution                                  |
-| ------------------------------ | ----------------------------------------- |
-| "New Connected App" grayed out | Enable External Client Apps in Settings   |
-| "client identifier invalid"    | Enable External Client Apps + wait 10 min |
-| "not authorized to access"     | Check OAuth policies in Connected App     |
-| Can't create Connected App     | Use External Client App instead           |
+**Problem**: Authentication fails with "invalid JWT"
+
+```
+Error: JWT validation failed
+Error: INVALID_GRANT: authentication failure
+```
+
+**Checklist**:
+
+- [ ] Certificate (`server.crt`) uploaded to External Client App matches private key (`server.key`)
+- [ ] `SFDX_JWT_KEY` secret contains the **entire** contents of `server.key`
+- [ ] JWT key format is correct (begins with `-----BEGIN RSA PRIVATE KEY-----`)
+- [ ] No extra whitespace or line breaks in the secret
+- [ ] Consumer Key (Client ID) is correct and matches `SFDX_CLIENT_ID`
+- [ ] Username is correct and matches `SFDX_USERNAME`
+- [ ] Instance URL is correct (`login.salesforce.com` for prod, `test.salesforce.com` for sandbox)
+- [ ] External Client App has propagated (waited 2-10 minutes after creation)
+
+**Verify JWT Key Format**:
+
+```bash
+# Check local file format
+cat server.key | head -1
+# Should show: -----BEGIN RSA PRIVATE KEY-----
+
+# Check for line ending issues
+cat server.key | file -
+# Should NOT show "with CRLF line terminators"
+```
+
+**Fix for Windows line endings**:
+
+```bash
+dos2unix server.key
+# or
+sed -i 's/\r$//' server.key
+```
+
+**Verify Certificate Matches Key**:
+
+```bash
+# Get key modulus
+openssl rsa -noout -modulus -in server.key | openssl md5
+
+# Get certificate modulus
+openssl x509 -noout -modulus -in server.crt | openssl md5
+
+# These should match exactly
+```
 
 ---
 
-**Note for Documentation**: This change affects all orgs upgraded to Winter '25 or later. Teams using older org versions can continue using the original Connected App creation flow without enabling External Client Apps.
+### Certificate Mismatch
+
+**Problem**: "Invalid client credentials" or "certificate validation failed"
+
+```
+Error: invalid_client_credentials
+Error: certificate validation failed
+```
+
+**Cause**: The certificate uploaded to Salesforce doesn't match the private key being used.
+
+**Solution**:
+
+1. **Regenerate both certificate and key** to ensure they match:
+
+   ```bash
+   # Generate new private key
+   openssl genrsa -out server.key 2048
+
+   # Generate new certificate from that key
+   openssl req -new -x509 -key server.key -out server.crt -days 3650
+   ```
+
+2. **Upload the new certificate** to your External Client App:
+
+   ```
+   Setup → External Client Apps → [Your App]
+   → Edit
+   → Use digital signatures → Choose File → Select server.crt
+   → Save
+   ```
+
+3. **Update GitHub secret** with new private key:
+
+   ```bash
+   # Copy entire contents of server.key
+   cat server.key
+
+   # Update SFDX_JWT_KEY secret with this value
+   ```
+
+4. **Wait 2-10 minutes** and retry
+
+---
 
 ### Wrong Instance URL
 
@@ -236,15 +293,115 @@ External Client Apps work identically with this action - just use the Client ID 
 
 ```
 Error: invalid_grant: authentication failure
+Error: user hasn't approved this consumer
 ```
 
-**Solution**: Use correct instance URL
+**Solution**: Use correct instance URL for your org type
+
+**For Sandboxes:**
 
 ```yaml
 - uses: rdbumstead/setup-salesforce-action@v2
   with:
-    instance_url: "https://test.salesforce.com" # For sandboxes
+    instance_url: "https://test.salesforce.com" # Required for sandboxes
 ```
+
+**For Production/Developer Orgs:**
+
+```yaml
+- uses: rdbumstead/setup-salesforce-action@v2
+  with:
+    instance_url: "https://login.salesforce.com" # Default (can omit)
+```
+
+**For Custom Domains:**
+
+```yaml
+- uses: rdbumstead/setup-salesforce-action@v2
+  with:
+    instance_url: "https://mycompany.my.salesforce.com"
+```
+
+---
+
+### OAuth Policy Issues
+
+**Problem**: "User hasn't approved this consumer" despite using JWT
+
+```
+Error: user hasn't approved this consumer
+```
+
+**Solution**: Adjust External Client App policies
+
+```
+Setup → External Client Apps → [Your App] → Manage
+→ Edit Policies
+→ OAuth Policies:
+   - Permitted Users: "All users may self-authorize"
+   - IP Relaxation: "Relax IP restrictions"
+→ Save
+```
+
+Wait 2-10 minutes for policies to propagate.
+
+---
+
+## 🆕 Winter '25 Authentication Quick Reference
+
+| Issue                            | Solution                                  |
+| -------------------------------- | ----------------------------------------- |
+| "New" button grayed out          | Enable External Client Apps in Settings   |
+| "client identifier invalid"      | Enable External Client Apps + wait 10 min |
+| "not authorized to access"       | Check OAuth policies, set to "All users"  |
+| "JWT validation failed"          | Verify certificate matches private key    |
+| "grant type not supported"       | Enable External Client Apps feature       |
+| Can't create External Client App | Check permissions or use Connected App    |
+
+---
+
+### Migrating from Connected App to External Client App
+
+**Why migrate?**
+
+- Enhanced security features
+- Better audit logging
+- Recommended by Salesforce for CI/CD
+- Future-proof for upcoming releases
+
+**Migration Steps:**
+
+1. **Keep your existing certificate and private key** - you can reuse them
+
+2. **Create new External Client App**:
+
+   ```
+   Setup → External Client Apps → New
+   → Upload same server.crt certificate
+   → Use same OAuth scopes
+   → Save
+   ```
+
+3. **Update GitHub secret** with new Consumer Key:
+
+   ```
+   SFDX_CLIENT_ID = New Consumer Key from External Client App
+   ```
+
+4. **Keep** `SFDX_JWT_KEY` unchanged (same private key works)
+
+5. **Test authentication** in a non-production workflow first
+
+6. **Deactivate old Connected App** after confirming new one works:
+   ```
+   Setup → App Manager → [Old Connected App] → Edit → Deactivate
+   ```
+
+**No downtime required:** You can create the External Client App and test it before deactivating the Connected App.
+
+---
+
+**Note for Pre-Winter '25 Orgs**: Organizations on releases before Winter '25 can continue using traditional Connected Apps. Both authentication methods work identically with this GitHub Action.
 
 ---
 
@@ -403,6 +560,35 @@ Error: Plugin not found: my-plugin
 1. **Verify plugin name** on npm: https://www.npmjs.com/package/your-plugin
 2. **Check spelling**: Case-sensitive
 3. **Try scoped name**: `@scope/plugin-name`
+
+---
+
+### LWC Jest Version Mismatch
+
+**Problem**: LWC tests fail after using `install_lwc_jest: "true"`
+
+```
+Error: The installed version of @salesforce/sfdx-lwc-jest is not compatible
+```
+
+**Cause**: The action installs the **latest** version of `@salesforce/sfdx-lwc-jest` globally. If your project's `package.json` requires a specific version to match your LWC API version, this may cause test failures.
+
+**Solution**: Install LWC Jest locally instead of using the action's global install:
+
+```yaml
+# Don't use the action's install
+install_lwc_jest: "false"
+
+# Install from your project's package.json
+- run: npm install
+```
+
+Or if you don't have it in package.json:
+
+```yaml
+# Install specific version locally
+- run: npm install --save-dev @salesforce/sfdx-lwc-jest@14.0.0
+```
 
 ---
 

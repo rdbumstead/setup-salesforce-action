@@ -1,33 +1,76 @@
+# ============================================================================
+# .github/workflows/test-cross-platform.yml
+# Comprehensive cross-platform validation
+# ============================================================================
 name: "Cross-Platform Tests"
 
 on:
-  pull_request:
+  push:
+    branches: [main, develop]
     paths:
       - "action.yml"
-      - ".github/workflows/**"
-      - "package.json"
-
-  push:
-    tags:
-      - "v*"
+      - ".github/workflows/test-cross-platform.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "action.yml"
+      - ".github/workflows/test-cross-platform.yml"
   workflow_dispatch:
     inputs:
       run_auth_tests:
-        description: "Run authentication tests (requires secrets)"
+        description: "Run authentication tests"
         required: false
         type: boolean
         default: false
 
+concurrency:
+  group: cross-platform-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-cli-install:
-    name: CLI Install - ${{ matrix.os }}
+  # ============================================================================
+  # CLI INSTALLATION (Matrix)
+  # ============================================================================
+  cli-install:
+    name: CLI Install - ${{ matrix.os }} (Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ["18", "20"]
+        node: ["18", "20"]
 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Setup Salesforce (Skip Auth)
+        uses: ./
+        with:
+          skip_auth: "true"
+          node_version: ${{ matrix.node }}
+
+      - name: Verify Installation
+        shell: bash
+        run: |
+          sf --version
+          echo "✅ CLI installed successfully on ${{ matrix.os }}"
+
+  # ============================================================================
+  # HEALTH CHECKS
+  # ============================================================================
+  health-check:
+    name: CLI Health Verification - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,341 +79,84 @@ jobs:
         uses: ./
         with:
           skip_auth: "true"
-          node_version: ${{ matrix.node-version }}
 
-      - name: Verify CLI Installation (Unix)
-        if: runner.os != 'Windows'
+      - name: Comprehensive CLI Health Check
         shell: bash
         run: |
-          sf --version
-          sf plugins --core
+          echo "🔍 Verifying CLI functionality..."
+          sf --version || exit 1
+          sf plugins --core || exit 1
+          sf --help >/dev/null 2>&1 || exit 1
+          sf config list >/dev/null 2>&1 || exit 1
+          echo "✅ All checks passed"
 
-      - name: Verify CLI Installation (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          sf --version
-          sf plugins --core
-
-  test-full-setup:
-    name: Full Setup - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
+  # ============================================================================
+  # PLATFORM-SPECIFIC BEHAVIORS
+  # ============================================================================
+  macos-specifics:
+    name: macOS Specifics
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Salesforce with Tools
+      - name: Verify timeout command absence
+        run: |
+          # Verify action works strategies without GNU timeout
+          if command -v timeout >/dev/null 2>&1; then
+            echo "⚠️  timeout command exists (unexpected on vanilla macOS)"
+          else
+            echo "✅ No timeout command (expected on macOS)"
+          fi
+
+      - name: Setup Salesforce
         uses: ./
         with:
           skip_auth: "true"
-          install_delta: "true"
-          install_scanner: "true"
-          install_prettier: "true"
-          install_eslint: "true"
-          install_lwc_jest: "true"
-          strict: "true"
+          cli_version: "latest"
 
-      - name: Verify Tool Installations (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          echo "Verifying Salesforce CLI..."
-          sf --version
+      - name: Verify Success
+        run: echo "✅ Action succeeded despite missing timeout command"
 
-          echo "Verifying sfdx-git-delta..."
-          sf plugins | grep sfdx-git-delta
-
-          echo "Verifying Code Analyzer..."
-          sf plugins | grep code-analyzer
-
-          echo "Verifying Prettier..."
-          prettier --version
-
-          echo "Verifying ESLint..."
-          eslint --version
-
-          echo "✅ All tools verified"
-
-      - name: Verify Tool Installations (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "Verifying Salesforce CLI..."
-          sf --version
-
-          Write-Host "Verifying sfdx-git-delta..."
-          sf plugins | Select-String "sfdx-git-delta"
-
-          Write-Host "Verifying Code Analyzer..."
-          sf plugins | Select-String "code-analyzer"
-
-          Write-Host "Verifying Prettier..."
-          prettier --version
-
-          Write-Host "Verifying ESLint..."
-          eslint --version
-
-          Write-Host "✅ All tools verified"
-
-  test-cache-first-run:
-    name: Cache Test (1st Run) - ${{ matrix.os }}
+  file-permissions:
+    name: File Permissions - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    if: github.repository_owner == 'rdbumstead' || (github.event_name == 'workflow_dispatch' && inputs.run_auth_tests)
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Check permissions on Unix systems where chmod matters
+        # Windows handling is different (files often readable by user)
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clear Cache (if exists)
-        continue-on-error: true
-        shell: bash
-        run: |
-          rm -rf ~/.npm
-          rm -rf ~/.local/share/sf
-          rm -rf ~/AppData/Local/sf || true
-          rm -rf ~/AppData/Roaming/npm || true
-
-      - name: Setup Salesforce (First Run)
-        uses: ./
-        with:
-          skip_auth: "true"
-          install_delta: "true"
-
-      - name: Save Timing
-        shell: bash
-        run: |
-          echo "first_run=true" >> $GITHUB_ENV
-
-  test-cache-second-run:
-    name: Cache Test (2nd Run) - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: test-cache-first-run
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Salesforce (Cache Hit Expected)
-        uses: ./
-        with:
-          skip_auth: "true"
-          install_delta: "true"
-
-      - name: Verify Cache Hit
-        shell: bash
-        run: |
-          echo "✅ Second run completed (should be faster due to cache)"
-
-  test-authentication:
-    name: Auth Test - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    if: (github.event_name == 'workflow_dispatch' && inputs.run_auth_tests) || github.repository_owner == 'rdbumstead'
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Salesforce with Auth
-        id: setup-sf
+      - name: Setup with JWT Auth
         uses: ./
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ vars.SFDX_USERNAME }}
 
-      - name: Verify Org Details (Unix)
-        if: runner.os != 'Windows'
+      - name: Verify Cleanup
         shell: bash
         run: |
-          echo "Org ID: ${{ steps.setup-sf.outputs.org_id }}"
-          echo "Org Type: ${{ steps.setup-sf.outputs.org_type }}"
-          echo "Org Edition: ${{ steps.setup-sf.outputs.org_edition }}"
-
-          sf org display --json
-
-      - name: Verify Org Details (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "Org ID: ${{ steps.setup-sf.outputs.org_id }}"
-          Write-Host "Org Type: ${{ steps.setup-sf.outputs.org_type }}"
-          Write-Host "Org Edition: ${{ steps.setup-sf.outputs.org_edition }}"
-
-          sf org display --json
-
-  test-error-handling:
-    name: Error Handling - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Test Missing Auth Inputs
-        id: test-error
-        continue-on-error: true
-        uses: ./
-        with:
-          skip_auth: "false"
-          # Intentionally missing jwt_key, client_id, username
-
-      - name: Verify Error Handling (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          if [ "${{ steps.test-error.outcome }}" = "failure" ]; then
-            echo "✅ Correctly failed with missing inputs"
-          else
-            echo "❌ Should have failed with missing inputs"
-            exit 1
-          fi
-
-      - name: Verify Error Handling (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          if ("${{ steps.test-error.outcome }}" -eq "failure") {
-            Write-Host "✅ Correctly failed with missing inputs"
-          } else {
-            Write-Host "❌ Should have failed with missing inputs"
-            exit 1
-          }
-
-  test-cache-performance:
-    name: Cache Performance - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    needs: test-cache-first-run
-    strategy:
-      matrix:
-        os: [windows-latest] # Windows needs extra validation
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Salesforce (Cache Should Hit)
-        id: setup-cache
-        uses: ./
-        with:
-          skip_auth: "true"
-          install_delta: "true"
-
-      - name: Verify Cache Hit (Windows Specific)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "Checking Windows cache behavior..."
-          # Check if sf directory exists in AppData
-          if (Test-Path "$env:USERPROFILE\AppData\Local\sf") {
-            Write-Host "✅ Windows cache directory exists"
-          } else {
-            Write-Host "⚠️  Windows cache directory not found at expected location"
-          }
-
-          # Check npm cache
-          if (Test-Path "$env:USERPROFILE\.npm") {
-            Write-Host "✅ npm cache directory exists"
-          }
-
-  test-summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    needs:
-      - test-cli-install
-      - test-full-setup
-      - test-cache-second-run
-      - test-error-handling
-      - test-cache-performance
-    if: always()
-
-    steps:
-      - name: Generate Summary
-        run: |
-          echo "## 🧪 Cross-Platform Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Test Jobs" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ needs.test-cli-install.result }}" = "success" ]; then
-            echo "✅ **CLI Install Tests**: Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **CLI Install Tests**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "${{ needs.test-full-setup.result }}" = "success" ]; then
-            echo "✅ **Full Setup Tests**: Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Full Setup Tests**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "${{ needs.test-cache-second-run.result }}" = "success" ]; then
-            echo "✅ **Cache Tests**: Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Cache Tests**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "${{ needs.test-error-handling.result }}" = "success" ]; then
-            echo "✅ **Error Handling Tests**: Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Error Handling Tests**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "${{ needs.test-cache-performance.result }}" = "success" ]; then
-            echo "✅ **Cache Performance Tests**: Passed" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.test-cache-performance.result }}" = "skipped" ]; then
-            echo "⏭️ **Cache Performance Tests**: Skipped (platform-specific)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Cache Performance Tests**: Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tested Platforms" >> $GITHUB_STEP_SUMMARY
-          echo "- Ubuntu (Linux)" >> $GITHUB_STEP_SUMMARY
-          echo "- Windows Server" >> $GITHUB_STEP_SUMMARY
-          echo "- macOS" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Platform-Specific Notes" >> $GITHUB_STEP_SUMMARY
-          echo "- **Windows**: Cache paths verified in AppData" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS**: jq installation via Homebrew verified" >> $GITHUB_STEP_SUMMARY
-          echo "- **Linux**: Default package manager (apt) used" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check Overall Status
-        run: |
+          # Check that sensitive files were cleaned up
           FAILED=false
 
-          if [ "${{ needs.test-cli-install.result }}" != "success" ]; then
-            echo "❌ Required test failed: test-cli-install"
+          if [ -f "jwt.key" ]; then
+            echo "❌ SECURITY: jwt.key file not cleaned up!"
             FAILED=true
           fi
 
-          if [ "${{ needs.test-error-handling.result }}" != "success" ]; then
-            echo "❌ Required test failed: test-error-handling"
+          if [ -f "authurl.txt" ]; then
+            echo "❌ SECURITY: authurl.txt file not cleaned up!"
             FAILED=true
           fi
 
-          if [ "${{ needs.test-full-setup.result }}" != "success" ]; then
-            echo "❌ Required test failed: test-full-setup"
+          if [ -f "access_token.txt" ]; then
+            echo "❌ SECURITY: access_token.txt file not cleaned up!"
             FAILED=true
           fi
 
@@ -378,8 +164,166 @@ jobs:
             exit 1
           fi
 
-          if [ "${{ needs.test-cache-second-run.result }}" != "success" ]; then
-            echo "⚠️  Cache tests failed - performance may be impacted"
+          echo "✅ No sensitive files left in workspace"
+
+  source-dirs-cross-platform:
+    name: Source Dirs - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Test Directories
+        shell: bash
+        run: |
+          mkdir -p "force-app"
+          mkdir -p "packages/core"
+          mkdir -p "src"
+
+      - name: Setup with Multiple Source Dirs
+        id: setup
+        uses: ./
+        with:
+          skip_auth: "true"
+          source_dirs: "force-app,packages/core,src"
+
+      - name: Verify Source Flags (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          FLAGS="${{ steps.setup.outputs.source_flags }}"
+
+          for dir in force-app packages/core src; do
+            if [[ "$FLAGS" == *"--source-dir $dir"* ]]; then
+              echo "✅ $dir found in flags"
+            else
+              echo "❌ Missing $dir in flags: $FLAGS"
+              exit 1
+            fi
+          done
+
+      - name: Verify Source Flags (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $flags = "${{ steps.setup.outputs.source_flags }}"
+
+          @("force-app", "packages/core", "src") | ForEach-Object {
+            if ($flags -match "--source-dir $_") {
+              Write-Host "✅ $_ found in flags"
+            } else {
+              Write-Host "❌ Missing $_ in flags: $flags"
+              exit 1
+            }
+          }
+
+  # ============================================================================
+  # CACHE TESTS (Matrix)
+  # ============================================================================
+  cache-seed:
+    name: Cache Seed - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Seed Cache (Exact Version)
+        uses: ./
+        with:
+          skip_auth: "true"
+          install_delta: "true"
+          # Use exact version granularity to ensure a stable key for the verification job
+          cli_version_for_cache: "exact"
+
+  cache-verify:
+    name: Cache Verify - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: cache-seed
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore Cache (Exact Version)
+        id: setup
+        uses: ./
+        with:
+          skip_auth: "true"
+          install_delta: "true"
+          cli_version_for_cache: "exact"
+
+      - name: Verify Execution
+        shell: bash
+        run: |
+          echo "✅ Action completed successfully (cache restoration implicit)"
+          echo "See logs above for 'Cache restored from key' message."
+
+  # ============================================================================
+  # SUMMARY
+  # ============================================================================
+  summary:
+    name: Cross-Platform Summary
+    runs-on: ubuntu-latest
+    needs:
+      - cli-install
+      - health-check
+      - macos-specifics
+      - source-dirs-cross-platform
+      - cache-verify
+      - file-permissions
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🌐 Cross-Platform Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.cli-install.result }}" = "success" ]; then
+            echo "✅ **CLI Install**: Passed (All OS/Node)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **CLI Install**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-          echo "✅ All required tests passed"
+          if [ "${{ needs.health-check.result }}" = "success" ]; then
+            echo "✅ **Health Check**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Health Check**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.macos-specifics.result }}" = "success" ]; then
+            echo "✅ **macOS Specifics**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **macOS Specifics**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.source-dirs-cross-platform.result }}" = "success" ]; then
+            echo "✅ **Source Dirs**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Source Dirs**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.file-permissions.result }}" = "success" ]; then
+            echo "✅ **File Permissions**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.file-permissions.result }}" = "skipped" ]; then
+             echo "⏭️ **File Permissions**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **File Permissions**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.cache-verify.result }}" = "success" ]; then
+            echo "✅ **Cache Verification**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Cache Verification**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi

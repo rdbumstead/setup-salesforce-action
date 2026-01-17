@@ -30,11 +30,43 @@ Instead, it provides a **deterministic execution layer** that workflows can safe
 
 ### Authentication as a First-Class Concern
 
-- **JWT** authentication for production
+- **JWT** authentication for production (using External Client Apps or Connected Apps)
 - **SFDX Auth URL** for simplicity
 - **Access token** support for advanced use cases
 
 Authentication is **validated** and **introspected**, not assumed.
+
+**Winter '25+ Recommendation**: This action supports both modern **External Client Apps** (recommended for orgs on Winter '25/October 2024 or later) and traditional **Connected Apps**. Both use identical JWT authentication flows and work seamlessly with this action.
+
+---
+
+## 🔐 Authentication Design
+
+This action treats authentication as **infrastructure**, not configuration:
+
+1. **Multiple Methods Supported**:
+
+   - JWT with External Client Apps (recommended for Winter '25+)
+   - JWT with Connected Apps (legacy, still supported)
+   - SFDX Auth URL (simpler, refresh token based)
+   - Access Token (advanced scenarios, short-lived)
+
+2. **Validation First**:
+
+   - All inputs are validated before attempting authentication
+   - Clear error messages identify missing or malformed credentials
+   - Platform-specific handling (file permissions, secure cleanup)
+
+3. **Introspection**:
+
+   - After authentication, org details are queried and exposed as outputs
+   - Org type (Production/Sandbox/Scratch) is detected automatically
+   - API version, org edition, and other metadata available for downstream steps
+
+4. **Security**:
+   - JWT keys are never logged or exposed
+   - Temporary files (JWT keys, auth URLs) are securely deleted after use
+   - Platform-specific secure file permissions (chmod on Unix, icacls on Windows)
 
 ---
 

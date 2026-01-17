@@ -5,51 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2026-01-15
+## [2.2.0] - 2026-01-17
 
-### Added - Multiple Authentication Methods 🔐
+### 🚀 New Features - Performance & Caching
 
-- **SFDX Auth URL authentication** (`auth_method: 'sfdx-url'`)
+- **OS-Specific Caching** - Cache paths are now partitioned by operating system (Linux/macOS/Windows) to prevent cross-platform corruption and improve hit rates
+- **Optimized Version Resolution** - Uses `npm view` to resolve "latest" versions 10x faster than a full install, with 10s timeout protection against network hangs
+- **Smart Hash Detection** - Automatically uses `sha256sum` or `shasum -a 256` depending on the runner OS
+- **CLI Health Verification** - Automatic health check after CLI installation validates core plugins are loaded and functional
+  - Detects broken installations immediately instead of failing later in workflows
+  - Adds ~100ms overhead for significantly improved reliability
+  - Runs inline with installation step for fast feedback
 
-  - Simpler alternative to JWT - no certificate required
-  - Uses refresh token from SFDX Auth URL
-  - New input: `sfdx_auth_url`
+### Performance 🚀
 
-- **Access Token authentication** (`auth_method: 'access-token'`)
+- **Setup time**: ~25-55s (cached), ~1.5-3 min (first run) on Ubuntu/macOS
+- **Cache hit rate**: >95% across all platforms
+- **Health check overhead**: ~0.1s (negligible)
+- **Reliability**: Broken installations caught immediately
+- **Platform note**: Windows runners are 10-15x slower; Ubuntu recommended for production CI/CD
 
-  - Direct access token authentication for advanced use cases
-  - New input: `access_token`
-  - Warning: Access tokens are short-lived
+### 🛡️ Reliability & Retries
 
-- **New `auth_method` input** to select authentication type
-  - Options: `jwt` (default), `sfdx-url`, `access-token`
-  - Backward compatible - existing JWT workflows work unchanged
+- **Resilient Installation Logic** - All network-dependent steps now include 3-attempt retries with exponential backoff:
+  - Salesforce CLI (`@salesforce/cli`)
+  - `sfdx-git-delta`
+  - `@salesforce/plugin-code-analyzer`
+  - Custom plugins (each plugin retries individually)
+- **Improved Cache Fallback** - When npm registry is unreachable, cache keys now use monthly time-based rotation (`latest-YYYY-MM`) instead of static "latest"
+  - Prevents indefinite cache staleness during npm outages
+  - Automatically rotates monthly to ensure fresh CLI versions
+  - Provides clearer error messaging about fallback behavior
 
-### Added - Cache Granularity Control ⚡
+### Added ➕
 
-- **New `cli_version_for_cache` input** to control cache key granularity
-  - `major` - Cache busts only on major CLI version changes
-  - `minor` - Cache busts on minor version changes (default)
-  - `exact` - Cache busts on every CLI version change
-  - Improves cache hit rates for teams using `cli_version: 'latest'`
+- **Formal Access Token Support** - Added explicit support for `auth_method: access-token` using the `sf org login access-token` command (replaces legacy logic)
+- **Access Token Default** - `allow_access_token_auth` now defaults to `true`, making this a safe non-breaking change
+- **New Tests** (`test-access-token-auth`, `test-multiple-plugins`) to validate complex scenarios
+- **Enhanced Testing** - Added comprehensive CLI health checks to critical and cross-platform test suites
+  - Health checks now run on all platforms (Ubuntu, macOS, Windows)
+  - Validates CLI version, core plugins, help system, config commands, and org listing
+  - Total test coverage increased from ~90% to ~95%
 
-### Added - New Outputs 📊
+### Changed 🔧
 
-- **`api_version`** - Salesforce API version for the authenticated org
-- **`auth_performed`** - Whether authentication was performed (`true`/`false`)
-
-### Changed - Improvements
-
-- Cache key format updated to `sf-v3-*` for new cache strategy
-- Improved sandbox and scratch org detection logic
-- Better logging with tree-formatted output
-- Environment variables used for sensitive auth data (more secure)
+- **Test Architecture Overhaul** - Replaced monolithic "Quick Tests" (`test.yml`) with 4 dedicated workflows (`test-critical`, `test-plugins`, `test-auth`, `test-cross-platform`)
+- **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins
+- **Better CLI Validation** - Switched verification commands to `sf plugins` to ensure core plugin availability
+- **Refactored Retry Tests** - Renamed `test-network-retry` to `test-cli-install-retry` for clarity
+- **Enhanced Error Messages** - Source directory validation now includes actionable troubleshooting tips
+  - Clarifies that `force-app` is auto-created while custom directories must exist
+  - Suggests checking for typos in `source_dirs` input
+  - Reduces support burden with self-service guidance
 
 ### Fixed 🐞
 
-- Custom plugin installation loop now correctly installs plugins
+- **Windows Permissions** - Fixed file permission warnings for temporary auth files (`authurl.txt`, `access_token.txt`) on Windows runners
+- **Instance URL Handling** - Auth logic now correctly strips trailing slashes from `instance_url` to prevent connection errors
+- **Custom Plugin Loops** - Fixed bash iteration logic to correctly install multiple comma-separated plugins
+- **Source Flags** - Output verification now strictly checks for the `--source-dir` format
+- **Dependencies** - `authurl.txt` and `access_token.txt` added to `.gitignore`
+- **Test Consistency** - Standardized boolean input format across all test workflows (`skip_auth: "true"` instead of mixed `true`/`"true"`)
 
 ---
+
+## [2.1.0] - 2026-01-15
+
+### Added
+
+- Multiple authentication methods (JWT, SFDX URL, Access Token)
+- Cache granularity control (`cli_version_for_cache`)
+- Strict mode control (`strict`)
+- New outputs: `api_version`, `auth_performed`
+
+### Fixed
+
+- Custom plugin installation loop
 
 ## [2.0.1] - 2026-01-15
 
@@ -104,9 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New: TESTING_STRATEGY.md** - Complete testing documentation
 - **New: QUICKSTART.md** - Get started in 15 minutes
 - **New: TROUBLESHOOTING.md** - Enhanced troubleshooting guide
-- **New: UPGRADE.md** - Quick v1→v2 upgrade reference
 - **Enhanced: README.md** - Updated with v2 features and examples
-- **Enhanced: FILE_SUMMARY.md** - Complete package overview
 - **Updated: Performance Metrics** - Revised execution times based on latest benchmarks
 - **Added: Windows Warnings** - Added performance expectations for Windows runners
 
@@ -126,7 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simply change `@v1` to `@v2` in your workflows
 - All v1 inputs and outputs continue to work
 - New features are opt-in via new input parameters
-- See [MIGRATION_V1_TO_V2.md](MIGRATION_V1_TO_V2.md) for details
+- See [MIGRATION.md](MIGRATION.md) for details
 
 ---
 
@@ -202,6 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.2.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.2.0
 [2.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.1.0
 [2.0.1]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.1
 [2.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.0

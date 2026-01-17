@@ -4,7 +4,9 @@ Deterministic, secure Salesforce CLI setup for real CI/CD pipelines.
 
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Setup%20Salesforce%20CLI-blue.svg)](https://github.com/marketplace/actions/setup-salesforce-cli)
 [![GitHub release](https://img.shields.io/github/v/release/rdbumstead/setup-salesforce-action)](https://github.com/rdbumstead/setup-salesforce-action/releases)
-[![Test Action](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test.yml)
+[![Critical Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-critical.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-critical.yml)
+[![Plugin Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-plugins.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-plugins.yml)
+[![Authentication Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-auth.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-auth.yml)
 [![Cross Platform Tests](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml/badge.svg)](https://github.com/rdbumstead/setup-salesforce-action/actions/workflows/test-cross-platform.yml)
 
 > Fast, cached, and configurable Salesforce CLI setup for GitHub Actions.  
@@ -105,7 +107,7 @@ Full documentation lives in `/docs`:
 
 - 📖 [Action Overview](docs/OVERVIEW.md)
 - 🚀 [Quick Start Guide](docs/QUICKSTART.md)
-- 🔄 [Migration Guide](docs/MIGRATION_V1_TO_V2.md)
+- 🔄 [Migration Guide](docs/MIGRATION.md)
 - 🧪 [Testing Strategy](docs/TESTING_STRATEGY.md)
 - 🖥️ [Platform Support](docs/PLATFORM_SUPPORT.md)
 - 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md)
@@ -116,10 +118,32 @@ Full documentation lives in `/docs`:
 - [x] Custom plugin installation
 - [x] Multi-directory source handling
 - [x] External Client App support (Winter '25+ orgs)
-- [ ] Enhanced CLI version resolution & reporting
+- [x] Enhanced CLI version resolution & reporting (v2.1+)
 - [ ] Org limits & usage outputs
 - [ ] SARIF output support
 - [ ] Reusable CI/CD workflow templates
+
+---
+
+## 🙏 Credits & Acknowledgments
+
+This action orchestrates the installation of several best-in-class open-source tools. We recommend starring their repositories and reviewing their specific documentation:
+
+- **[sfdx-git-delta](https://github.com/scolladon/sfdx-git-delta)** by [Sebastien Colladon](https://github.com/scolladon)
+  _Used for the `install_delta` feature. This tool is essential for generating delta deployments._
+- **[Salesforce Code Analyzer](https://github.com/forcedotcom/code-analyzer)** by Salesforce
+  _Used for the `install_scanner` feature. Provides PMD, ESLint, and RetireJS scanning._
+- **[Prettier Plugin Apex](https://github.com/dangmai/prettier-plugin-apex)**
+  _Used for the `install_prettier` feature to format Apex code._
+- **[LWC ESLint Plugin](https://github.com/salesforce/eslint-plugin-lwc)**
+  _Used for the `install_eslint` feature to lint Lightning Web Components._
+
+### Tested With
+
+We explicitly verify compatibility with popular ecosystem plugins in our [test suite](.github/workflows/test-plugins.yml), including:
+
+- **[sfdx-hardis](https://github.com/hardisgroupcom/sfdx-hardis)** (CI/CD orchestration)
+- **[sfpowerscripts](https://github.com/dxatscale/sfpowerscripts)** (Release management)
 
 ---
 

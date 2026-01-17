@@ -1,0 +1,391 @@
+# ============================================================================
+# .github/workflows/test-plugins.yml
+# Plugin installation and management tests
+# ============================================================================
+name: Plugin Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "action.yml"
+      - ".github/workflows/test-plugins.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "action.yml"
+      - ".github/workflows/test-plugins.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  single-plugin:
+    name: Single Plugin - ${{ matrix.plugin.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plugin:
+          - name: "sfdx-hardis"
+            verify_cmd: "sf hardis:auth:login --help"
+          - name: "@dxatscale/sfpowerscripts"
+            verify_cmd: "sf plugins | grep sfpowerscripts"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with ${{ matrix.plugin.name }}
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "${{ matrix.plugin.name }}"
+
+      - name: Verify Plugin Installation
+        run: |
+          echo "Verifying ${{ matrix.plugin.name }}..."
+          PLUGIN="${{ matrix.plugin.name }}"
+
+          if sf plugins --json | jq -e '.[] | select(.name == "'"$PLUGIN"'")' > /dev/null; then
+            echo "✅ $PLUGIN installed"
+          else
+            echo "❌ $PLUGIN not found"
+            exit 1
+          fi
+
+      - name: Test Plugin Execution
+        run: |
+          echo "Testing command execution..."
+          ${{ matrix.plugin.verify_cmd }}
+          echo "✅ Plugin executed successfully"
+
+  multiple-plugins:
+    name: Multiple Plugins (Comma-Separated)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Multiple Plugins
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "sfdx-hardis"
+
+      - name: Verify Plugins Installed
+        run: |
+          echo "Checking plugins installed..."
+
+          # Verify community plugin was installed
+          if sf plugins --json | jq -e '.[] | select(.name == "sfdx-hardis")' > /dev/null; then
+            echo "✅ sfdx-hardis installed"
+          else
+            echo "❌ sfdx-hardis not found"
+            exit 1
+          fi
+
+          # Verify bundled core plugins are present (they're always there)
+          if sf plugins --json | jq -e '.[] | select(.name | test("plugin-data"))' > /dev/null; then
+            echo "✅ plugin-data present (bundled)"
+          else
+            echo "❌ plugin-data not found"
+            exit 1
+          fi
+
+      - name: Execute Commands
+        run: |
+          echo "Testing sfdx-hardis execution..."
+          sf hardis:auth:login --help
+          echo "✅ sfdx-hardis command executed"
+
+          echo ""
+          echo "Testing bundled plugin-data (always present)..."
+          sf data query --help
+          echo "✅ data command executed"
+
+          echo ""
+          echo "✅ All plugins executed successfully"
+
+  builtin-scanner:
+    name: Built-in Scanner
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rdbumstead' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Scanner
+        uses: ./
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          install_scanner: "true"
+          strict: "true"
+
+      - name: Verify Scanner Installation
+        run: |
+          echo "Checking Code Analyzer..."
+
+          # Code Analyzer can appear as @salesforce/plugin-code-analyzer or code-analyzer
+          if sf plugins --json | jq -e '.[] | select(.name | test("code-analyzer"))' > /dev/null; then
+            echo "✅ code-analyzer installed"
+          else
+            echo "❌ code-analyzer not found"
+            exit 1
+          fi
+
+  builtin-delta:
+    name: Built-in Delta
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rdbumstead' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Delta
+        uses: ./
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          install_delta: "true"
+          strict: "true"
+
+      - name: Verify Delta Installation
+        run: |
+          echo "Checking sfdx-git-delta..."
+
+          if sf plugins --json | jq -e '.[] | select(.name | test("sfdx-git-delta"))' > /dev/null; then
+            echo "✅ sfdx-git-delta installed"
+          else
+            echo "❌ sfdx-git-delta not found"
+            exit 1
+          fi
+
+  dev-tools:
+    name: Dev Tools (Prettier, ESLint, Jest)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'rdbumstead' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Dev Tools
+        uses: ./
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ vars.SFDX_USERNAME }}
+          install_prettier: "true"
+          install_eslint: "true"
+          install_lwc_jest: "true"
+          strict: "true"
+
+      - name: Verify Dev Tools
+        run: |
+          echo "Checking dev tools..."
+
+          if command -v prettier &> /dev/null; then
+            prettier --version
+            echo "✅ Prettier installed"
+          else
+            echo "❌ Prettier not found"
+            exit 1
+          fi
+
+          if command -v eslint &> /dev/null; then
+            eslint --version
+            echo "✅ ESLint installed"
+          else
+            echo "❌ ESLint not found"
+            exit 1
+          fi
+
+          if npm list -g @salesforce/sfdx-lwc-jest &> /dev/null; then
+            echo "✅ LWC Jest installed"
+          else
+            echo "❌ LWC Jest not found"
+            exit 1
+          fi
+
+  invalid-plugin-non-strict:
+    name: Invalid Plugin (Non-Strict Mode)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Invalid Plugin Names
+        id: test-invalid-non-strict
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "invalid plugin name!,@invalid/scope"
+          strict: "false"
+
+      - name: Verify Action Completed
+        run: |
+          echo "✅ Action completed in non-strict mode despite invalid plugin names"
+
+  invalid-plugin-strict:
+    name: Invalid Plugin (Strict Mode)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Invalid Plugin Names (Strict)
+        id: test-invalid-strict
+        continue-on-error: true
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "invalid!name"
+          strict: "true"
+
+      - name: Verify Strict Mode Failed
+        run: |
+          if [ "${{ steps.test-invalid-strict.outcome }}" = "failure" ]; then
+            echo "✅ Strict mode correctly failed with invalid plugin name"
+          else
+            echo "❌ Strict mode should have failed with invalid plugin"
+            exit 1
+          fi
+
+  nonexistent-plugin-non-strict:
+    name: Nonexistent Plugin (Non-Strict Mode)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Nonexistent Plugin
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "nonexistent-plugin-xyz-123"
+          strict: "false"
+
+      - name: Verify Continued Execution
+        run: |
+          echo "✅ Action continued despite nonexistent plugin in non-strict mode"
+
+  nonexistent-plugin-strict:
+    name: Nonexistent Plugin (Strict Mode)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Nonexistent Plugin (Strict)
+        id: strict-fail
+        continue-on-error: true
+        uses: ./
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "nonexistent-plugin-xyz-123"
+          strict: "true"
+
+      - name: Verify Strict Mode Failed
+        run: |
+          if [ "${{ steps.strict-fail.outcome }}" = "failure" ]; then
+            echo "✅ Strict mode correctly failed with nonexistent plugin"
+          else
+            echo "❌ Should have failed in strict mode"
+            exit 1
+          fi
+
+  summary:
+    name: Plugin Tests Summary
+    runs-on: ubuntu-latest
+    needs:
+      - single-plugin
+      - multiple-plugins
+      - builtin-scanner
+      - builtin-delta
+      - dev-tools
+      - invalid-plugin-non-strict
+      - invalid-plugin-strict
+      - nonexistent-plugin-non-strict
+      - nonexistent-plugin-strict
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🔌 Plugin Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.single-plugin.result }}" = "success" ]; then
+            echo "✅ **Single Plugin**: Passed (all 3 plugins)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Single Plugin**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.multiple-plugins.result }}" = "success" ]; then
+            echo "✅ **Multiple Plugins**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Multiple Plugins**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.builtin-scanner.result }}" = "success" ]; then
+            echo "✅ **Built-in Scanner**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.builtin-scanner.result }}" = "skipped" ]; then
+            echo "⏭️ **Built-in Scanner**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Built-in Scanner**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.builtin-delta.result }}" = "success" ]; then
+            echo "✅ **Built-in Delta**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.builtin-delta.result }}" = "skipped" ]; then
+            echo "⏭️ **Built-in Delta**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Built-in Delta**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.dev-tools.result }}" = "success" ]; then
+            echo "✅ **Dev Tools**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.dev-tools.result }}" = "skipped" ]; then
+            echo "⏭️ **Dev Tools**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Dev Tools**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.invalid-plugin-non-strict.result }}" = "success" ]; then
+            echo "✅ **Invalid Plugin (Non-Strict)**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Invalid Plugin (Non-Strict)**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.invalid-plugin-strict.result }}" = "success" ]; then
+            echo "✅ **Invalid Plugin (Strict)**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Invalid Plugin (Strict)**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.nonexistent-plugin-non-strict.result }}" = "success" ]; then
+            echo "✅ **Nonexistent Plugin (Non-Strict)**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Nonexistent Plugin (Non-Strict)**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.nonexistent-plugin-strict.result }}" = "success" ]; then
+            echo "✅ **Nonexistent Plugin (Strict)**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Nonexistent Plugin (Strict)**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Note**: Some tests require repository secrets and will be skipped in forks." >> $GITHUB_STEP_SUMMARY

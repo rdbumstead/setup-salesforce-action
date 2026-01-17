@@ -1,6 +1,9 @@
 # ============================================================================
 # examples/quality-check.yml
 # ============================================================================
+# Comprehensive quality check workflow including Scanner, Prettier, ESLint, and LWC tests
+# Ensures code quality before deployment
+
 name: Code Quality Pipeline
 
 on:

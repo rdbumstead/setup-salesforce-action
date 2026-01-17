@@ -1,6 +1,9 @@
 # ============================================================================
 # examples/delta-deployment.yml
 # ============================================================================
+# Example workflow using sfdx-git-delta to deploy only changed metadata
+# optimizing deployment times by avoiding full source deploys
+
 name: Delta Deployment
 
 on:

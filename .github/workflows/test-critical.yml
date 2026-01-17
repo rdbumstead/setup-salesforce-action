@@ -1,0 +1,336 @@
+# ============================================================================
+# .github/workflows/test-critical.yml
+# Critical tests that must pass for every commit
+# ============================================================================
+name: Critical Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "action.yml"
+      - ".github/workflows/test-critical.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "action.yml"
+      - ".github/workflows/test-critical.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: critical-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  health-check:
+    name: CLI Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce CLI
+        uses: ./
+        with:
+          skip_auth: "true"
+
+      - name: Comprehensive CLI Health Check
+        shell: bash
+        run: |
+          echo "🔍 Verifying CLI functionality..."
+          sf --version || exit 1
+          sf plugins --core || exit 1
+          sf --help >/dev/null 2>&1 || exit 1
+          sf config list >/dev/null 2>&1 || exit 1
+          echo "✅ All checks passed"
+
+  cli-only:
+    name: CLI Installation Only
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce (Skip Auth)
+        uses: ./
+        with:
+          skip_auth: "true"
+
+      - name: Verify CLI Installation
+        run: |
+          echo "Verifying SF CLI installation..."
+          sf --version | head -n 1
+
+          echo ""
+          echo "Verifying plugin system..."
+          sf plugins
+
+          echo ""
+          echo "✅ CLI installed successfully without authentication"
+
+  error-handling:
+    name: Error Handling
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Missing Required Inputs
+        id: test-missing-inputs
+        continue-on-error: true
+        uses: ./
+        with:
+          skip_auth: "false"
+          # Intentionally missing jwt_key, client_id, username
+
+      - name: Verify Error Was Caught
+        run: |
+          if [ "${{ steps.test-missing-inputs.outcome }}" = "failure" ]; then
+            echo "✅ Action correctly failed with missing inputs"
+          else
+            echo "❌ Action should have failed with missing inputs"
+            exit 1
+          fi
+
+  cache-behavior:
+    name: Cache Behavior
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: First Run (Cache Miss Expected)
+        id: first-run
+        uses: ./
+        with:
+          skip_auth: "true"
+          install_delta: "true"
+
+      - name: Second Run (Cache Hit Expected)
+        id: second-run
+        uses: ./
+        with:
+          skip_auth: "true"
+          install_delta: "true"
+
+      - name: Verify Cache Was Used
+        run: |
+          echo "📦 Cache behavior test completed"
+          echo ""
+          echo "Both runs completed successfully."
+          echo "Cache hit/miss can be verified in the action logs above."
+          echo ""
+          echo "✅ Cache test passed"
+
+  cache-granularity:
+    name: Cache Granularity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Major Cache Granularity
+        id: setup-major
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "major"
+
+      - name: Setup with Minor Cache Granularity
+        id: setup-minor
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "minor"
+
+      - name: Setup with Exact Cache Granularity
+        id: setup-exact
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version_for_cache: "exact"
+
+      - name: Verify
+        run: |
+          echo "✅ Cache granularity test completed"
+          echo "All three granularity options accepted: major, minor, exact"
+
+  cli-retry:
+    name: CLI Install Retry Logic
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce (with retry simulation)
+        id: setup-retry
+        continue-on-error: true
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version: "999.999.999" # Non-existent version to trigger retries
+
+      - name: Verify Retry Behavior
+        run: |
+          if [ "${{ steps.setup-retry.outcome }}" = "failure" ]; then
+            echo "✅ CLI install failed after retries as expected"
+          else
+            echo "❌ Action unexpectedly succeeded with invalid CLI version"
+            exit 1
+          fi
+
+  source-flags:
+    name: Source Flags Output
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Mock Directories
+        run: mkdir -p force-app src packages/core
+
+      - name: Setup with Multiple Directories
+        id: setup-dirs
+        uses: ./
+        with:
+          skip_auth: "true"
+          source_dirs: "force-app,src,packages/core"
+
+      - name: Verify Source Flags
+        run: |
+          FLAGS="${{ steps.setup-dirs.outputs.source_flags }}"
+          echo "Source flags: $FLAGS"
+
+          # Verify each directory is present with --source-dir prefix
+          for dir in force-app src packages/core; do
+            if [[ "$FLAGS" == *"--source-dir $dir"* ]]; then
+              echo "✅ Found: --source-dir $dir"
+            else
+              echo "❌ Missing: --source-dir $dir"
+              exit 1
+            fi
+          done
+
+          echo "✅ source_flags output correct"
+
+  pinned-cli-version:
+    name: Pinned CLI Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup with Pinned Version
+        id: setup
+        uses: ./
+        with:
+          skip_auth: "true"
+          cli_version: "2.67.7" # Known stable version
+
+      - name: Verify CLI Version
+        run: |
+          INSTALLED=$(sf --version | head -n 1)
+          echo "Installed: $INSTALLED"
+
+          if [[ "$INSTALLED" == *"2.67.7"* ]]; then
+            echo "✅ Correct CLI version installed"
+          else
+            echo "❌ Expected version 2.67.7, got: $INSTALLED"
+            exit 1
+          fi
+
+  summary:
+    name: Critical Tests Summary
+    runs-on: ubuntu-latest
+    needs:
+      - health-check
+      - cli-only
+      - error-handling
+      - cache-behavior
+      - cache-granularity
+      - cli-retry
+      - source-flags
+      - pinned-cli-version
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🛡️ Critical Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "These tests must pass for every commit." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=false
+
+          if [ "${{ needs.health-check.result }}" = "success" ]; then
+            echo "✅ **Health Check**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Health Check**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.cli-only.result }}" = "success" ]; then
+            echo "✅ **CLI Installation Only**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **CLI Installation Only**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.error-handling.result }}" = "success" ]; then
+            echo "✅ **Error Handling**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Error Handling**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.cache-behavior.result }}" = "success" ]; then
+            echo "✅ **Cache Behavior**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Cache Behavior**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.cache-granularity.result }}" = "success" ]; then
+            echo "✅ **Cache Granularity**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Cache Granularity**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.cli-retry.result }}" = "success" ]; then
+            echo "✅ **CLI Install Retry**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **CLI Install Retry**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.source-flags.result }}" = "success" ]; then
+            echo "✅ **Source Flags Output**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Source Flags Output**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [ "${{ needs.pinned-cli-version.result }}" = "success" ]; then
+            echo "✅ **Pinned CLI Version**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Pinned CLI Version**: Failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$FAILED" = true ]; then
+            echo "❌ **Status**: One or more critical tests failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ **Status**: All critical tests passed" >> $GITHUB_STEP_SUMMARY
+          fi

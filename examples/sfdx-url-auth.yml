@@ -1,6 +1,10 @@
-name: SFDX Auth URL Authentication
+# ============================================================================
+# examples/sfdx-url-auth.yml
+# ============================================================================
 # Example workflow using SFDX Auth URL authentication method (v2.1+)
 # This is simpler than JWT - no certificate required
+
+name: SFDX Auth URL Authentication
 
 on:
   push:

@@ -1,0 +1,32 @@
+# ============================================================================
+# examples/custom-plugin.yml
+# ============================================================================
+# Example workflow demonstrating how to install and use custom Salesforce CLI plugins
+
+name: Custom Plugin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hardis-quality-check:
+    name: Hardis Quality Gate (Example)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce Environment
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          skip_auth: "true"
+          custom_sf_plugins: "sfdx-hardis"
+          install_scanner: "true"
+
+      - name: Run Hardis Project Audit
+        run: |
+          # Example: Run hardis command on your setup layer
+          sf hardis project audit apiversion --help
+
+          echo "✅ Hardis commands run cleanly on setup-salesforce-cli"

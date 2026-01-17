@@ -1,6 +1,9 @@
 # ============================================================================
 # examples/multi-org.yml
 # ============================================================================
+# Example workflow for deploying to multiple orgs (e.g., UAT and Prod)
+# demonstrates environment handling and alias usage
+
 name: Multi-Org Deployment
 
 on:

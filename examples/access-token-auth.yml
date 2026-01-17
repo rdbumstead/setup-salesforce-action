@@ -1,6 +1,10 @@
-name: Access Token Authentication
+# ============================================================================
+# examples/access-token-auth.yml
+# ============================================================================
 # Example workflow using Access Token authentication method (v2.1+)
 # For advanced use cases - access tokens are short-lived
+
+name: Access Token Authentication
 
 on:
   workflow_dispatch:

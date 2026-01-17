@@ -1,6 +1,9 @@
 # ============================================================================
 # examples/minimal.yml
 # ============================================================================
+# Minimal example workflow for basic Salesforce CLI setup and authentication
+# Good starting point for simple automation
+
 name: Minimal Salesforce Setup
 
 on: [push]

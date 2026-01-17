@@ -62,6 +62,11 @@ inputs:
     required: false
 
   # Direct Access Token inputs
+  allow_access_token_auth:
+    description: "Explicitly allow direct access token authentication. Advanced use only."
+    required: false
+    default: "true"
+
   access_token:
     description: "Salesforce Access Token (required when auth_method is 'access-token')"
     required: false
@@ -242,8 +247,17 @@ runs:
         echo "🔑 Generating cache key..."
 
         # Tooling hash
+        if command -v sha256sum >/dev/null 2>&1; then
+          HASH_CMD="sha256sum"
+        elif command -v shasum >/dev/null 2>&1; then
+          HASH_CMD="shasum -a 256"
+        else
+          HASH_CMD="echo"
+        fi
+
         TOOLS_HASH=$(echo "${{ inputs.install_delta }}-${{ inputs.install_scanner }}-${{ inputs.install_prettier }}-${{ inputs.install_eslint }}-${{ inputs.install_lwc_jest }}-${{ inputs.custom_sf_plugins }}" \
-          | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              | $HASH_CMD | awk '{print $1}' | cut -c1-8)
+
 
         echo "tools_hash=$TOOLS_HASH" >> $GITHUB_OUTPUT
 
@@ -253,12 +267,22 @@ runs:
         if [ "$CLI_VERSION_INPUT" = "latest" ]; then
           echo "📦 Resolving actual Salesforce CLI version for cache..."
 
-          # Ensure CLI is present to resolve version
-          if ! command -v sf &> /dev/null; then
-            npm install -g @salesforce/cli
+          # OPTIMIZATION: Fetch version from npm instead of installing
+          # This prevents a full install just to check the version number
+          # Check for timeout command (gnu coreutils)
+          if command -v timeout >/dev/null 2>&1; then
+            ACTUAL_VERSION=$(timeout 10 npm view @salesforce/cli version 2>/dev/null || true)
+          else
+            ACTUAL_VERSION=$(npm view @salesforce/cli version 2>/dev/null || true)
           fi
 
-          ACTUAL_VERSION=$(sf --version | head -n 1 | awk '{print $NF}')
+          if [ -z "$ACTUAL_VERSION" ]; then
+            # Use monthly rotation for cache when npm is unreachable
+            ACTUAL_VERSION="latest-$(date +%Y-%m)"
+            echo "⚠️ Could not resolve version from npm. Using time-based cache: $ACTUAL_VERSION"
+            echo "💡 Cache will rotate monthly to ensure freshness"
+          fi
+
           echo "  Detected CLI version: $ACTUAL_VERSION"
 
           case "${{ inputs.cli_version_for_cache }}" in
@@ -296,13 +320,24 @@ runs:
         echo "  ✅ Cache key uses CLI version: $CLI_CACHE_VERSION"
         echo "  ✅ Tools hash: $TOOLS_HASH"
 
-    - name: Cache Salesforce CLI and plugins
+    - name: Cache Salesforce CLI and plugins (Unix)
+      if: runner.os != 'Windows'
       uses: actions/cache@v4
       with:
         path: |
           ~/.npm
           ~/.local/share/sf
           ~/.cache/node-gyp
+        key: sf-v3-${{ runner.os }}-node${{ inputs.node_version }}-cli${{ steps.cache-key.outputs.cli_cache_version }}-tools${{ steps.cache-key.outputs.tools_hash }}
+        restore-keys: |
+          sf-v3-${{ runner.os }}-node${{ inputs.node_version }}-cli${{ steps.cache-key.outputs.cli_cache_version }}-
+          sf-v3-${{ runner.os }}-node${{ inputs.node_version }}-
+
+    - name: Cache Salesforce CLI and plugins (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: |
           ~/AppData/Local/sf
           ~/AppData/Roaming/npm
         key: sf-v3-${{ runner.os }}-node${{ inputs.node_version }}-cli${{ steps.cache-key.outputs.cli_cache_version }}-tools${{ steps.cache-key.outputs.tools_hash }}
@@ -361,6 +396,16 @@ runs:
         echo "📊 Installed: $CLI_VERSION"
         echo "cli_version=$CLI_VERSION" >> $GITHUB_OUTPUT
 
+        # Inline Health Check
+        if ! sf plugins --core >/dev/null 2>&1; then
+          echo "❌ CLI installed but not responding correctly"
+          exit 1
+        fi
+        echo "✅ CLI verified and functional"
+
+    # --------------------------------------------------------------------------
+    # SOURCE DIRECTORY RESOLUTION
+    # --------------------------------------------------------------------------
     - name: Resolve Source Directories
       id: resolve-source-dirs
       shell: bash
@@ -394,10 +439,14 @@ runs:
 
         if [ "$HAS_VALID_DIR" = "false" ]; then
           echo "❌ Error: No valid source directories found."
+          echo ""
+          echo "💡 Tips:"
+          echo "   • Default 'force-app' is auto-created if missing"
+          echo "   • Custom directories must exist in your repository"
+          echo "   • Check your source_dirs input for typos"
           exit 1
         fi
 
-        echo "SF_SOURCE_FLAGS=$FLAGS" >> $GITHUB_ENV
         echo "source_flags=$FLAGS" >> $GITHUB_OUTPUT
         echo "✅ Source directories resolved"
 
@@ -429,7 +478,14 @@ runs:
             ;;
             
           access-token)
+
             echo "  Using Direct Access Token authentication"
+
+            if [ "${{ inputs.auth_method }}" = "access-token" ] && [ "${{ inputs.allow_access_token_auth }}" != "true" ]; then
+              echo "❌ Error: access-token authentication is disabled by default"
+              echo "   Set allow_access_token_auth: true to explicitly enable it"
+              exit 1
+            fi
             
             [ -z "${{ inputs.access_token }}" ] && MISSING_INPUTS+=("access_token")
             [ -z "${{ inputs.instance_url }}" ] && MISSING_INPUTS+=("instance_url")
@@ -471,16 +527,8 @@ runs:
         echo "$JWT_KEY" > jwt.key
 
         # Set secure permissions
-        # Note: Linux (ubuntu-latest) is the recommended and supported runner
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "  ⚠️  Windows runner detected - this is experimental and not recommended"
-          echo "  ⚠️  Use ubuntu-latest for production Salesforce CI/CD workflows"
-          echo "  Setting Windows file permissions..."
-          # Windows: Use the current user (works on GitHub Actions runners)
-          icacls jwt.key /inheritance:r 2>nul || true
-          icacls jwt.key /grant:r "$env:USERNAME:(R)" 2>nul || true
-        else
-          echo "  Setting file permissions..."
+        # Set secure permissions (Critical for Unix)
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
           chmod 600 jwt.key
         fi
 
@@ -491,21 +539,25 @@ runs:
         }
         trap cleanup EXIT
 
-        # Build auth command
-        AUTH_CMD="sf org login jwt \
-          --client-id ${{ inputs.client_id }} \
-          --jwt-key-file jwt.key \
-          --username ${{ inputs.username }} \
-          --instance-url ${{ inputs.instance_url }} \
-          --alias ${{ inputs.alias }}"
-
         # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
           echo "  🔧 Setting as Dev Hub..."
-          $AUTH_CMD --set-default-dev-hub
+          sf org login jwt \
+            --client-id "${{ inputs.client_id }}" \
+            --jwt-key-file jwt.key \
+            --username "${{ inputs.username }}" \
+            --instance-url "${{ inputs.instance_url }}" \
+            --alias "${{ inputs.alias }}" \
+            --set-default-dev-hub
         else
           echo "  🔧 Setting as default org..."
-          $AUTH_CMD --set-default
+          sf org login jwt \
+            --client-id "${{ inputs.client_id }}" \
+            --jwt-key-file jwt.key \
+            --username "${{ inputs.username }}" \
+            --instance-url "${{ inputs.instance_url }}" \
+            --alias "${{ inputs.alias }}" \
+            --set-default
         fi
 
         echo "✅ JWT authentication successful"
@@ -525,11 +577,7 @@ runs:
         echo "$SFDX_AUTH_URL" > authurl.txt
 
         # Set secure permissions
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "  ⚠️  Windows runner detected - use ubuntu-latest for production"
-          icacls authurl.txt /inheritance:r
-          icacls authurl.txt /grant:r "${GITHUB_ACTOR}:(R)"
-        else
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
           chmod 600 authurl.txt
         fi
 
@@ -560,65 +608,30 @@ runs:
       if: inputs.skip_auth != 'true' && inputs.auth_method == 'access-token'
       shell: bash
       env:
-        ACCESS_TOKEN: ${{ inputs.access_token }}
+        SF_ACCESS_TOKEN: ${{ inputs.access_token }}
       run: |
         set -e
 
         echo "🔐 Authenticating via Direct Access Token..."
-        echo "  ⚠️  WARNING: Access tokens are short-lived and recommended for advanced use only"
-        echo "  ⚠️  For production workflows, use JWT or SFDX Auth URL authentication"
+        echo "  ⚠️ WARNING: Access tokens are short-lived and recommended for advanced use only"
+        echo "  ⚠️ For production workflows, use JWT or SFDX Auth URL authentication"
         echo "  Instance URL: ${{ inputs.instance_url }}"
         echo "  Alias: ${{ inputs.alias }}"
 
-        # Create a secure auth file with the access token
-        echo "$ACCESS_TOKEN" > access_token.txt
-
-        # Set secure permissions
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "  ⚠️  Windows runner detected - use ubuntu-latest for production"
-          icacls access_token.txt /inheritance:r
-          icacls access_token.txt /grant:r "${GITHUB_ACTOR}:(R)"
-        else
-          chmod 600 access_token.txt
-        fi
-
-        # Cleanup function
-        cleanup() {
-          echo "  🧹 Cleaning up access token file..."
-          rm -f access_token.txt authurl_token.txt
-        }
-        trap cleanup EXIT
-
-        # SF CLI doesn't have a direct access token command, so we create an SFDX auth URL
-        INSTANCE_URL_CLEAN=$(echo "${{ inputs.instance_url }}" | sed 's|https://||')
-
-        # Note: client_id is optional for access token auth, use a placeholder if not provided
-        CLIENT_ID_VALUE="${{ inputs.client_id }}"
-        if [ -z "$CLIENT_ID_VALUE" ]; then
-          CLIENT_ID_VALUE="PlatformCLI"
-        fi
-
-        AUTH_URL="force://$CLIENT_ID_VALUE::$ACCESS_TOKEN@$INSTANCE_URL_CLEAN"
-
-        echo "$AUTH_URL" > authurl_token.txt
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          icacls authurl_token.txt /inheritance:r
-          icacls authurl_token.txt /grant:r "${GITHUB_ACTOR}:(R)"
-        else
-          chmod 600 authurl_token.txt
-        fi
-
-        sf org login sfdx-url \
-          --sfdx-url-file authurl_token.txt \
-          --alias ${{ inputs.alias }}
+        # Use SF_ACCESS_TOKEN environment variable (per Salesforce CLI documentation)
+        # The --no-prompt flag reads from SF_ACCESS_TOKEN env var
+        sf org login access-token \
+          --instance-url "${{ inputs.instance_url }}" \
+          --alias ${{ inputs.alias }} \
+          --no-prompt
 
         # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
           echo "  🔧 Setting as Dev Hub..."
-          sf config set target-dev-hub=${{ inputs.alias }}
+          sf config set target-dev-hub=${{ inputs.alias }} --global
         else
           echo "  🔧 Setting as default org..."
-          sf config set target-org=${{ inputs.alias }}
+          sf config set target-org=${{ inputs.alias }} --global
         fi
 
         echo "✅ Access Token authentication successful"
@@ -641,8 +654,8 @@ runs:
         API_VERSION=$(echo "$DETAILS" | jq -r '.result.apiVersion // "unknown"')
 
         # Try multiple fields for sandbox detection
-        IS_SANDBOX=$(echo "$DETAILS" | jq -r '.result.isSandbox // false')
-        IS_SCRATCH=$(echo "$DETAILS" | jq -r '.result.isScratchOrg // false')
+        IS_SANDBOX=$(echo "$DETAILS" | jq -r '.result.isSandbox // false | tostring')
+        IS_SCRATCH=$(echo "$DETAILS" | jq -r '.result.isScratchOrg // false | tostring')
 
         # Additional check: sandbox orgs often have instanceUrl containing "cs" or "sandbox"
         if [ "$IS_SANDBOX" = "false" ] && [[ "$INSTANCE_URL" =~ (cs[0-9]+|sandbox) ]]; then
@@ -717,8 +730,32 @@ runs:
 
         if ! sf plugins inspect sfdx-git-delta >/dev/null 2>&1; then
           echo "📦 Installing sfdx-git-delta..."
-          echo y | sf plugins install sfdx-git-delta
-          echo "  ✅ sfdx-git-delta installed"
+          
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          BASE_DELAY=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            DELAY=$((BASE_DELAY * (2 ** RETRY_COUNT)))
+            echo "  Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
+            
+            if echo y | sf plugins install sfdx-git-delta 2>&1; then
+              echo "  ✅ sfdx-git-delta installed"
+              break
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "  ⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              sleep $DELAY
+            else
+              echo "  ❌ Failed to install sfdx-git-delta after $MAX_RETRIES attempts"
+              if [ "${{ inputs.strict }}" = "true" ]; then
+                exit 1
+              fi
+            fi
+          done
         else
           echo "✅ sfdx-git-delta already installed"
         fi
@@ -733,8 +770,32 @@ runs:
 
         if ! sf plugins inspect @salesforce/plugin-code-analyzer >/dev/null 2>&1; then
           echo "📦 Installing @salesforce/plugin-code-analyzer..."
-          echo y | sf plugins install @salesforce/plugin-code-analyzer
-          echo "  ✅ Code Analyzer installed"
+          
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          BASE_DELAY=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            DELAY=$((BASE_DELAY * (2 ** RETRY_COUNT)))
+            echo "  Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
+            
+            if echo y | sf plugins install @salesforce/plugin-code-analyzer 2>&1; then
+              echo "  ✅ Code Analyzer installed"
+              break
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "  ⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              sleep $DELAY
+            else
+              echo "  ❌ Failed to install Code Analyzer after $MAX_RETRIES attempts"
+              if [ "${{ inputs.strict }}" = "true" ]; then
+                exit 1
+              fi
+            fi
+          done
         else
           echo "✅ Code Analyzer already installed"
         fi
@@ -757,37 +818,64 @@ runs:
         for plugin in "${PLUGIN_LIST[@]}"; do
           # Trim whitespace
           plugin=$(echo "$plugin" | xargs)
-          
+              
           # Skip empty entries
           if [ -z "$plugin" ]; then
             continue
           fi
-          
-          # Validate plugin name format (alphanumeric, hyphens, underscores, @ for scopes)
-          if ! echo "$plugin" | grep -qE '^(@[a-zA-Z0-9-]+\/)?[a-zA-Z0-9@_-]+$'; then
+              
+          # Validate plugin name format
+          # Accepts: @scope/plugin-name OR plugin-name
+          # Rejects: @scope/, @scope, @@invalid, @/name, etc.
+          # Supports dots in package names (e.g. my.plugin)
+          if ! echo "$plugin" | grep -qE '^(@[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+|[a-zA-Z0-9@._-]+)$'; then
             echo "  ⚠️  Invalid plugin name format: '$plugin'"
-            echo "     Plugin names should match: [@scope/]plugin-name"
+            echo "     Valid formats:"
+            echo "       - Scoped: @scope/plugin-name"
+            echo "       - Unscoped: plugin-name"
+            echo "     Must contain only: letters, numbers, hyphens, underscores"
             FAILED_PLUGINS+=("$plugin (invalid format)")
             if [ "${{ inputs.strict }}" = "true" ]; then
               exit 1
             fi
             continue
           fi
-          
+              
           # Check if already installed
           if sf plugins inspect "$plugin" >/dev/null 2>&1; then
             echo "  ✅ $plugin already installed"
             SKIPPED_PLUGINS+=("$plugin")
             continue
           fi
-          
-          # Install the plugin
+              
+          # Install the plugin with retry logic
           echo "  📦 Installing: $plugin"
-          if echo y | sf plugins install "$plugin" 2>&1; then
-            echo "    ✅ Installed successfully"
-            INSTALLED_PLUGINS+=("$plugin")
-          else
-            echo "    ❌ Failed to install"
+          
+          PLUGIN_RETRIES=3
+          PLUGIN_ATTEMPT=0
+          PLUGIN_DELAY=5
+          INSTALL_SUCCESS=false
+          
+          while [ $PLUGIN_ATTEMPT -lt $PLUGIN_RETRIES ]; do
+            CURRENT_DELAY=$((PLUGIN_DELAY * (2 ** PLUGIN_ATTEMPT)))
+            
+            if echo y | sf plugins install "$plugin" 2>&1; then
+              echo "    ✅ Installed successfully"
+              INSTALLED_PLUGINS+=("$plugin")
+              INSTALL_SUCCESS=true
+              break
+            fi
+            
+            PLUGIN_ATTEMPT=$((PLUGIN_ATTEMPT + 1))
+            
+            if [ $PLUGIN_ATTEMPT -lt $PLUGIN_RETRIES ]; then
+              echo "    ⚠️  Attempt $PLUGIN_ATTEMPT failed, retrying in ${CURRENT_DELAY}s..."
+              sleep $CURRENT_DELAY
+            fi
+          done
+          
+          if [ "$INSTALL_SUCCESS" = "false" ]; then
+            echo "    ❌ Failed to install after $PLUGIN_RETRIES attempts"
             FAILED_PLUGINS+=("$plugin")
             if [ "${{ inputs.strict }}" = "true" ]; then
               exit 1
@@ -860,6 +948,10 @@ runs:
 
         if ! npm list -g @salesforce/sfdx-lwc-jest &> /dev/null; then
           echo "📦 Installing @salesforce/sfdx-lwc-jest..."
+          # NOTE: This installs the latest version globally.
+          # If your project has a specific version in package.json,
+          # you may want to run 'npm install' locally instead to
+          # avoid version mismatches with your LWC API version.
           npm install --global @salesforce/sfdx-lwc-jest
           echo "  ✅ sfdx-lwc-jest installed"
         else
