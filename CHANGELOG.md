@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **LWC Jest version warning** - Added in-code comment warning about global install version risks
 - **.gitignore updated** - Temporary auth files (`authurl.txt`, `access_token.txt`) now ignored
 - **Access token URL fix** - Instance URL now strips trailing slash to prevent auth URL issues
+- **Access Token Logic Fix** - Updated to use `SF_ACCESS_TOKEN` env var and `sf org login access-token` command
 - **Removed unused GITHUB_ENV export** - `SF_SOURCE_FLAGS` env var removed (use `source_flags` output)
 
 ---

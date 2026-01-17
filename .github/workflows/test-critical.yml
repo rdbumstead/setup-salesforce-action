@@ -240,7 +240,7 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "## 🔴 Critical Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Critical Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "These tests must pass for every commit." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
