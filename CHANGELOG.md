@@ -9,51 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 New Features - Performance & Caching
 
-- **OS-specific cache configuration** - Cache paths are now separated by operating system to prevent conflicts
-  - Unix (Linux/macOS): `~/.npm`, `~/.local/share/sf`, `~/.cache/node-gyp`
-  - Windows: `~/AppData/Local/sf`, `~/AppData/Roaming/npm`
-  - _Note: This change will force a one-time cache miss (expect ~2m setup time on first run)_
+- **OS-Specific Caching** - Cache paths are now partitioned by operating system (Linux/macOS/Windows) to prevent cross-platform corruption and improve hit rates.
+- **Optimized Version Resolution** - Uses `npm view` to resolve "latest" versions 10x faster than a full install, with 10s timeout protection against network hangs.
+- **Smart Hash Detection** - Automatically uses `sha256sum` or `shasum -a 256` depending on the runner OS.
 
-- **Cache key generation optimized** - Version resolution now uses `npm view @salesforce/cli version` instead of installing CLI
-  - Faster cache key generation
-  - Includes 10s timeout protection against network hangs
+### 🛡️ Reliability & Retries
 
-### Added - Reliability Improvements 🛡️
+- **Resilient Installation Logic** - All network-dependent steps now include 3-attempt retries with exponential backoff:
+  - Salesforce CLI (`@salesforce/cli`)
+  - `sfdx-git-delta`
+  - `@salesforce/plugin-code-analyzer`
+  - Custom plugins (each plugin retries individually)
 
-- **Plugin installation retry logic** - All plugin installs now have 3-attempt retry with exponential backoff
-  - `sfdx-git-delta`: Retries on transient npm/network failures
-  - `@salesforce/plugin-code-analyzer`: Retries on transient failures
-  - Custom plugins: Each plugin retries individually
+### Added ➕
 
-- **Cross-platform hash command detection** - Automatically uses `sha256sum` or `shasum -a 256` based on availability
+- **Formal Access Token Support** - Added explicit support for `auth_method: access-token` using the `sf org login access-token` command (replaces legacy logic).
+- **Access Token Default** - `allow_access_token_auth` now defaults to `true`, making this a safe non-breaking change.
+- **New Tests** (`test-access-token-auth`, `test-multiple-plugins`) to validate complex scenarios.
 
-### Changed - Improvements
+### Changed 🔧
 
-- **Workflow renamed** from "Quick Tests" to "Functional Tests"
-- **Improved plugin verification** - Uses `jq` regex matching instead of simple `grep` (handles plugin name variations)
-- **Improved CLI validation** - Uses `sf plugins` instead of `sf plugins --core`
-- **Renamed `test-network-retry` to `test-cli-install-retry`** - Better reflects purpose
-- **Fixed `test-invalid-plugins`** - Removed "valid-plugin" (not a real npm package)
-- **Access Token Auth Default** - `allow_access_token_auth` now defaults to `true` (making this a non-breaking release)
-- Cache key format: `sf-v3-*` (unchanged from v2.1)
-
-### Added - New Tests 🧪
-
-- **`test-access-token-auth`** - Tests access token authentication flow
-- **`test-multiple-plugins`** - Tests installing multiple custom plugins at once
+- **Workflow Renamed** - "Quick Tests" is now "Functional Tests".
+- **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins.
+- **Better CLI Validation** - Switched verification commands to `sf plugins` to ensure core plugin availability.
+- **Refactored Retry Tests** - Renamed `test-network-retry` to `test-cli-install-retry` for clarity.
 
 ### Fixed 🐞
 
-- Custom plugin installation loop now correctly installs plugins
-- Cache behavior test now informational-only (cache-hit not reliably detectable in composite actions)
-- Source flags verification now checks for exact `--source-dir <dir>` format
-- Cross-platform plugin verification in `test-cross-platform.yml` (uses proper regex matching)
-- **npm view timeout protection** - Cache key generation now has 10s timeout to prevent hangs
-- **LWC Jest version warning** - Added in-code comment warning about global install version risks
-- **.gitignore updated** - Temporary auth files (`authurl.txt`, `access_token.txt`) now ignored
-- **Access token URL fix** - Instance URL now strips trailing slash to prevent auth URL issues
-- **Access Token Logic Fix** - Updated to use `SF_ACCESS_TOKEN` env var and `sf org login access-token` command
-- **Removed unused GITHUB_ENV export** - `SF_SOURCE_FLAGS` env var removed (use `source_flags` output)
+- **Windows Permissions** - Fixed file permission warnings for temporary auth files (`authurl.txt`, `access_token.txt`) on Windows runners.
+- **Instance URL Handling** - Auth logic now correctly strips trailing slashes from `instance_url` to prevent connection errors.
+- **Custom Plugin Loops** - Fixed bash iteration logic to correctly install multiple comma-separated plugins.
+- **Source Flags** - Output verification now strictly checks for the `--source-dir` format.
+- **Dependencies** - `authurl.txt` and `access_token.txt` added to `.gitignore`.
 
 ---
 
@@ -63,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Multiple authentication methods (JWT, SFDX URL, Access Token)
 - Cache granularity control (`cli_version_for_cache`)
+- Strict mode control (`strict`)
 - New outputs: `api_version`, `auth_performed`
 
 ### Fixed
@@ -218,7 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[3.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v3.0.0
+[2.2.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.2.0
 [2.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.1.0
 [2.0.1]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.1
 [2.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.0.0
