@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 🔧
 
-- **Workflow Renamed** - "Quick Tests" is now "Functional Tests".
+- **Test Architecture Overhaul** - Replaced monolithic "Quick Tests" (`test.yml`) with 4 dedicated workflows (`test-critical`, `test-plugins`, `test-auth`, `test-cross-platform`).
 - **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins.
 - **Better CLI Validation** - Switched verification commands to `sf plugins` to ensure core plugin availability.
 - **Refactored Retry Tests** - Renamed `test-network-retry` to `test-cli-install-retry` for clarity.
