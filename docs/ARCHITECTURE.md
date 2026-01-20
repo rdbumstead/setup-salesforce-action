@@ -78,43 +78,62 @@ This is **CLI orchestration**—exactly what Composite Actions are designed for.
 
 ### High-Level Structure
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        action.yml (Orchestrator)                     │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   Core      │  │   Auth      │  │   Detect    │  │   Tooling   │ │
-│  │   Setup     │  │   Layer     │  │   Layer     │  │   Layer     │ │
-│  ├─────────────┤  ├─────────────┤  ├─────────────┤  ├─────────────┤ │
-│  │ • Node.js   │  │ • JWT       │  │ • Org Type  │  │ • Delta     │ │
-│  │ • OS Detect │  │ • SFDX URL  │  │ • API Ver   │  │ • Scanner   │ │
-│  │ • jq        │  │ • Token     │  │ • Instance  │  │ • Prettier  │ │
-│  │ • CLI       │  │ • Skip Auth │  │ • Edition   │  │ • ESLint    │ │
-│  │ • Cache     │  │ • Dry Run   │  │ • Username  │  │ • Jest      │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │                    Invariant Validation                         ││
-│  │  • CLI callable?  • Org reachable?  • API version resolved?     ││
-│  └─────────────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │                    Observability Layer                          ││
-│  │  • Track Defaults  • Publish Summary  • Config JSON             ││
-│  └─────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-                          ┌─────────────────┐
-                          │    OUTPUTS      │
-                          ├─────────────────┤
-                          │ • org_id        │
-                          │ • api_version   │
-                          │ • instance_url  │
-                          │ • cli_path      │
-                          │ • config_json   │
-                          │ • ...           │
-                          └─────────────────┘
+```mermaid
+flowchart TB
+    subgraph orchestrator["action.yml (Orchestrator)"]
+        subgraph layers["Processing Layers"]
+            direction LR
+            subgraph core["Core Setup"]
+                c1["Node.js"]
+                c2["OS Detect"]
+                c3["jq"]
+                c4["CLI"]
+                c5["Cache"]
+            end
+            subgraph auth["Auth Layer"]
+                a1["JWT"]
+                a2["SFDX URL"]
+                a3["Token"]
+                a4["Skip Auth"]
+                a5["Dry Run"]
+            end
+            subgraph detect["Detect Layer"]
+                d1["Org Type"]
+                d2["API Ver"]
+                d3["Instance"]
+                d4["Edition"]
+                d5["Username"]
+            end
+            subgraph tooling["Tooling Layer"]
+                t1["Delta"]
+                t2["Scanner"]
+                t3["Prettier"]
+                t4["ESLint"]
+                t5["Jest"]
+            end
+        end
+        subgraph validation["Invariant Validation"]
+            v1["CLI callable?"]
+            v2["Org reachable?"]
+            v3["API version resolved?"]
+        end
+        subgraph observability["Observability Layer"]
+            o1["Track Defaults"]
+            o2["Publish Summary"]
+            o3["Config JSON"]
+        end
+    end
+
+    orchestrator --> outputs
+
+    subgraph outputs["OUTPUTS"]
+        out1["org_id"]
+        out2["api_version"]
+        out3["instance_url"]
+        out4["cli_path"]
+        out5["config_json"]
+        out6["..."]
+    end
 ```
 
 ### Component Responsibilities
@@ -166,27 +185,61 @@ This is **CLI orchestration**—exactly what Composite Actions are designed for.
 
 ### Step Execution Flow
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        EXECUTION ORDER                            │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph always1["Always Run"]
+        s1["1. Setup Node.js"]
+        s2["2. Detect Operating System"]
+    end
 
-1. Setup Node.js              [ALWAYS]
-2. Detect Operating System    [ALWAYS]
-3. Ensure Dependencies (jq)   [Linux/macOS]
-4. Generate Cache Key         [ALWAYS]
-5. Restore Cache              [ALWAYS]
-6. Install Salesforce CLI     [ALWAYS]
-7. Resolve Source Directories [ALWAYS]
-8. Validate Auth Inputs       [IF !skip_auth && !dry_run]
-9. Authenticate Org           [IF !skip_auth && !dry_run]
-10. Detect Org Details        [IF !skip_auth]
-11. Set Auth Status           [ALWAYS]
-12. Track Default Usage       [ALWAYS]
-13. Install Optional Tooling  [CONDITIONAL per input]
-14. Validate Setup Invariants [ALWAYS]
-15. Environment Ready         [ALWAYS]
-16. Publish Setup Summary     [ALWAYS, even on failure]
+    s1 --> s2
+    s2 --> s3
+
+    s3{"3. Ensure Dependencies\n(jq)"}
+    s3 -->|"Linux/macOS"| s3a["Install jq"]
+    s3 -->|"Windows"| s4
+    s3a --> s4
+
+    subgraph always2["Always Run"]
+        s4["4. Generate Cache Key"]
+        s5["5. Restore Cache"]
+        s6["6. Install Salesforce CLI"]
+        s7["7. Resolve Source Directories"]
+    end
+
+    s4 --> s5 --> s6 --> s7
+
+    s7 --> s8
+    s8{"8. Validate Auth Inputs"}
+    s8 -->|"!skip_auth && !dry_run"| s9["9. Authenticate Org"]
+    s8 -->|"skip_auth or dry_run"| s10
+    s9 --> s10
+
+    s10{"10. Detect Org Details"}
+    s10 -->|"!skip_auth"| s10a["Query Org Metadata"]
+    s10 -->|"skip_auth"| s11
+    s10a --> s11
+
+    subgraph always3["Always Run"]
+        s11["11. Set Auth Status"]
+        s12["12. Track Default Usage"]
+    end
+
+    s11 --> s12
+    s12 --> s13
+
+    s13{"13. Install Optional Tooling"}
+    s13 -->|"Per input flags"| s13a["Install Plugins"]
+    s13 -->|"None requested"| s14
+    s13a --> s14
+
+    subgraph always4["Always Run (even on failure)"]
+        s14["14. Validate Setup Invariants"]
+        s15["15. Environment Ready"]
+        s16["16. Publish Setup Summary"]
+    end
+
+    s14 --> s15 --> s16
 ```
 
 ---
