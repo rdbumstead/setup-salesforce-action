@@ -687,7 +687,7 @@ runs:
 
     - name: Detect Org Details
       id: detect-org
-      if: inputs.skip_auth != 'true'
+      if: inputs.skip_auth != 'true' && inputs.dry_run != 'true'
       shell: bash
       run: |
         set -euo pipefail
