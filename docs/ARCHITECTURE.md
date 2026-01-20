@@ -431,26 +431,15 @@ Track these metrics in your workflows:
 
 ### v4 Triggers
 
-v4 will be released when **all** of the following conditions are met:
+v4 will be released when the modular architecture:
 
-1. **Technical Readiness**
-   - All modules extracted and independently tested
-   - Controller integration proven in beta releases
-   - Performance metrics show improvement or parity with v3
-
-2. **User Readiness**
-   - Community feedback indicates demand for modular architecture
-   - Migration guide is complete and validated
-   - Breaking changes (if any) are justified and documented
-
-3. **Quality Gates**
-   - 90%+ test coverage on all modules
-   - Zero P0/P1 bugs in v3.x
-   - Successful canary testing on 10+ production workflows
+1. **Passes all existing tests** - The refactored modular structure must pass the exact same test cases as the current monolithic v3 action. The `action.yml` will serve as an orchestration wrapper that calls modular components, and existing test workflows will validate the integrated behavior
+2. **Maintains performance parity** - No regression in setup time (cache hit and cache miss scenarios)
+3. **Has a documented migration path** - Clear upgrade guide for any breaking changes
 
 ### v4 Breaking Changes (Potential)
 
-The following changes **may** occur in v4, with 6-month deprecation warnings:
+The following changes **may** occur in v4:
 
 | Change                                | Rationale               | Migration Path                    |
 | ------------------------------------- | ----------------------- | --------------------------------- |
@@ -458,11 +447,7 @@ The following changes **may** occur in v4, with 6-month deprecation warnings:
 | Output format changes                 | Structured JSON outputs | Parse new format via `fromJSON()` |
 | New required inputs (with defaults)   | Enhanced configuration  | Accept defaults or provide values |
 
-**Commitment**: No silent behavior changes. Any breaking change will have:
-
-- 6-month deprecation warning in v3.x releases
-- Clear migration guide
-- Backward compatibility mode (if feasible)
+**Commitment**: No silent behavior changes. Breaking changes will have clear migration documentation.
 
 ---
 
@@ -599,15 +584,9 @@ Current workflows test:
   run: exit 1 # Test should have failed!
 ```
 
-### Canary Testing (Future)
+### Release Validation
 
-Before major releases:
-
-1. Release as `v3.1.0-beta.1`
-2. Deploy to 5% of internal workflows
-3. Monitor failure rates for 48 hours
-4. If metrics are clean, promote to `v3.1.0`
-5. Update `@v3` pointer
+Before major releases, validate by running all test workflows against the release candidate branch to ensure no regressions
 
 ---
 
