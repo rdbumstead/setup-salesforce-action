@@ -1246,4 +1246,4 @@ Use `@vercel/ncc` to compile everything into a single file:
 
 ---
 
-_Last Updated: 2026-01-18 (v3.0.0)_
+_Last Updated: 2026-01-19 (v3.0.0)_
