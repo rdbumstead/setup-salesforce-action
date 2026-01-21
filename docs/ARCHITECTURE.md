@@ -12,15 +12,14 @@
 4. [Error Modes](#error-modes)
 5. [Security Model](#security-model)
 6. [Performance Characteristics](#performance-characteristics)
-7. [Future Architecture (v4)](#future-architecture-v4)
-8. [The Polyglot Pattern](#the-polyglot-pattern)
-9. [Release Strategy](#release-strategy)
-10. [Testing Approach](#testing-approach)
-11. [For Contributors](#for-contributors)
-12. [Known Limitations](#known-limitations)
-13. [Frequently Asked Questions](#frequently-asked-questions)
-14. [Glossary](#glossary)
-15. [Decision Log](#decision-log)
+7. [The Polyglot Pattern](#the-polyglot-pattern)
+8. [Release Strategy](#release-strategy)
+9. [Testing Approach](#testing-approach)
+10. [For Contributors](#for-contributors)
+11. [Known Limitations](#known-limitations)
+12. [Frequently Asked Questions](#frequently-asked-questions)
+13. [Glossary](#glossary)
+14. [Decision Log](#decision-log)
 
 ---
 
@@ -427,27 +426,9 @@ Track these metrics in your workflows:
 
 ---
 
-## Future Architecture (v4)
+## Status Update (Jan 2026)
 
-### v4 Triggers
-
-v4 will be released when the modular architecture:
-
-1. **Passes all existing tests** - The refactored modular structure must pass the exact same test cases as the current monolithic v3 action. The `action.yml` will serve as an orchestration wrapper that calls modular components, and existing test workflows will validate the integrated behavior
-2. **Maintains performance parity** - No regression in setup time (cache hit and cache miss scenarios)
-3. **Has a documented migration path** - Clear upgrade guide for any breaking changes
-
-### v4 Breaking Changes (Potential)
-
-The following changes **may** occur in v4:
-
-| Change                                | Rationale               | Migration Path                    |
-| ------------------------------------- | ----------------------- | --------------------------------- |
-| Removal of deprecated `sfdx_*` inputs | CLI v1 is EOL           | Use `sf` equivalents              |
-| Output format changes                 | Structured JSON outputs | Parse new format via `fromJSON()` |
-| New required inputs (with defaults)   | Enhanced configuration  | Accept defaults or provide values |
-
-**Commitment**: No silent behavior changes. Breaking changes will have clear migration documentation.
+After review, this action will remain a stable, monolithic CLI wrapper to prioritize backward compatibility and maintenance stability. The proposed modular v4 architecture has been shelved to avoid unnecessary complexity for current users.
 
 ---
 
@@ -462,8 +443,7 @@ The following changes **may** occur in v4:
 | **Full TypeScript**               | Best testing, type safety, rich ecosystem     | Higher contributor barrier, build overhead           | If action evolves into complex business logic |
 
 **Current v3 Decision**: Pure Composite
-**v4 Consideration**: Hybrid for Project Context Engine only
-**Future**: Evaluate based on complexity growth
+**Future**: Continue with current architecture
 
 ---
 
@@ -624,18 +604,6 @@ Before major releases, validate by running all test workflows against the releas
    - Include updated `dist/` files (if applicable)
    - Reference issue number
    - Update `CHANGELOG.md` under `[Unreleased]`
-
-### Module Authoring Guidelines (v4)
-
-When the time comes to write modules:
-
-| Guideline                 | Description                                       |
-| ------------------------- | ------------------------------------------------- |
-| **Single Responsibility** | Each module does one thing well                   |
-| **Input Validation**      | Fail fast with clear error messages               |
-| **Output Format**         | JSON for machine consumption, human-readable logs |
-| **Documentation**         | README in module directory with examples          |
-| **Testing**               | Standalone test workflow per module               |
 
 ### Code Style
 
