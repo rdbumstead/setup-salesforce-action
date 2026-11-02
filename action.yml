@@ -746,7 +746,7 @@ runs:
         echo "  |- Org ID: $ORG_ID"
         echo "  |- Username: $USERNAME"
         echo "  |- Instance: $INSTANCE_URL"
-        echo "  └─ API Version: $API_VERSION"
+        echo "  \`- API Version: $API_VERSION"
         echo ""
 
         if [ "$ORG_TYPE" = "Production" ] && [[ "$INSTANCE_URL" =~ (cs[0-9]+|sandbox) ]]; then
@@ -982,7 +982,7 @@ runs:
         echo "Plugin Installation Summary:"
         echo "   |- Installed: ${#INSTALLED_PLUGINS[@]}"
         echo "   |- Already Present: ${#SKIPPED_PLUGINS[@]}"
-        echo "   └─ Failed: ${#FAILED_PLUGINS[@]}"
+        echo "   \`- Failed: ${#FAILED_PLUGINS[@]}"
 
         if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
           echo ""
@@ -1110,11 +1110,11 @@ runs:
         echo ""
         echo "Installed Tools:"
         echo "  |- Salesforce CLI: $(sf --version | head -n 1)"
-        [ "${{ inputs.install_delta }}" = "true" ] && echo "  |- sfdx-git-delta:" || true
-        [ "${{ inputs.install_scanner }}" = "true" ] && echo "  |- Code Analyzer:" || true
-        [ "${{ inputs.install_prettier }}" = "true" ] && echo "  |- Prettier:" || true
-        [ "${{ inputs.install_eslint }}" = "true" ] && echo "  |- ESLint:" || true
-        [ "${{ inputs.install_lwc_jest }}" = "true" ] && echo "  └─ LWC Jest:" || true
+        [ "${{ inputs.install_delta }}" = "true" ] && echo "  |- sfdx-git-delta" || true
+        [ "${{ inputs.install_scanner }}" = "true" ] && echo "  |- Code Analyzer" || true
+        [ "${{ inputs.install_prettier }}" = "true" ] && echo "  |- Prettier" || true
+        [ "${{ inputs.install_eslint }}" = "true" ] && echo "  |- ESLint" || true
+        [ "${{ inputs.install_lwc_jest }}" = "true" ] && echo "  \`- LWC Jest" || true
 
         if [ -n "${{ inputs.custom_sf_plugins }}" ]; then
           echo ""
@@ -1127,7 +1127,7 @@ runs:
             INDEX=$((INDEX + 1))
             if [ -n "$plugin" ]; then
               if [ $INDEX -eq $PLUGIN_COUNT ]; then
-                echo "  └─ $plugin"
+                echo "  \`- $plugin"
               else
                 echo "  |- $plugin"
               fi
