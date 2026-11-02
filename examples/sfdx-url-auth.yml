@@ -32,6 +32,6 @@ jobs:
 # sf org display --target-org YourOrg --verbose --json | jq -r '.result.sfdxAuthUrl'
 #
 # Store this value as a secret in your repository:
-# Repository → Settings → Secrets and variables → Actions → New repository secret
+# Repository -> Settings -> Secrets and variables -> Actions -> New repository secret
 # Name: SFDX_AUTH_URL
 # Value: force://...your auth url...

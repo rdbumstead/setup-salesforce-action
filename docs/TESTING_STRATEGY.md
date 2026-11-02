@@ -2,7 +2,7 @@
 
 This document explains the comprehensive testing strategy for the **Setup Salesforce CLI Action**. Our testing architecture ensures reliability, security, and cross-platform compatibility through a four-pillar testing approach.
 
-## 🎯 Testing Philosophy
+## Testing Philosophy
 
 We use a tiered testing approach to balance fast feedback loops with exhaustive validation:
 
@@ -13,18 +13,18 @@ We use a tiered testing approach to balance fast feedback loops with exhaustive 
 
 ---
 
-## 📊 Workflows Overview
+## Workflows Overview
 
 | Workflow     | File                      | Frequency         | Focus                               | Secrets?   |
 | :----------- | :------------------------ | :---------------- | :---------------------------------- | :--------- |
-| **Critical** | `test-critical.yml`       | Every Push/PR     | Core Logic, Caching, Error Handling | ❌ No      |
-| **Plugins**  | `test-plugins.yml`        | Every Push/PR     | Plugins, Scanners, Dev Tools        | ❌ No      |
-| **Auth**     | `test-auth.yml`           | Owner Push/Manual | JWT, SFDX URL, Access Token         | ✅ Yes     |
-| **Release**  | `test-cross-platform.yml` | Releases/Manual   | OS Compatibility, Security          | ⚠️ Partial |
+| **Critical** | `test-critical.yml`       | Every Push/PR     | Core Logic, Caching, Error Handling | No      |
+| **Plugins**  | `test-plugins.yml`        | Every Push/PR     | Plugins, Scanners, Dev Tools        | No      |
+| **Auth**     | `test-auth.yml`           | Owner Push/Manual | JWT, SFDX URL, Access Token         | Yes     |
+| **Release**  | `test-cross-platform.yml` | Releases/Manual   | OS Compatibility, Security          | Partial |
 
 ---
 
-## 🚀 1. Critical Tests (`test-critical.yml`)
+## 1. Critical Tests (`test-critical.yml`)
 
 **Purpose**: Fast feedback for "did I break the build?" questions. These tests never fail due to missing secrets.
 
@@ -38,7 +38,7 @@ We use a tiered testing approach to balance fast feedback loops with exhaustive 
 
 ---
 
-## 🔌 2. Plugin Tests (`test-plugins.yml`)
+## 2. Plugin Tests (`test-plugins.yml`)
 
 **Purpose**: Validate the installation and execution of external tools and plugins.
 
@@ -51,7 +51,7 @@ We use a tiered testing approach to balance fast feedback loops with exhaustive 
 
 ---
 
-## 🔐 3. Authentication Tests (`test-auth.yml`)
+## 3. Authentication Tests (`test-auth.yml`)
 
 **Purpose**: Verify that the action can actually authenticate with Salesforce. These tests require repository secrets and typically skip on forks.
 
@@ -67,14 +67,14 @@ We use a tiered testing approach to balance fast feedback loops with exhaustive 
 
 ---
 
-## 🌍 4. Cross-Platform Tests (`test-cross-platform.yml`)
+## 4. Cross-Platform Tests (`test-cross-platform.yml`)
 
 **Purpose**: The final gate before a release. Ensures behavior is identical across OSs.
 
 ### Matrix Coverage
 
 - **OS**: Ubuntu, Windows, macOS
-- **Node**: v18, v20
+- **Node**: v22, v24, v26
 
 ### Key Scenarios
 
@@ -84,7 +84,7 @@ We use a tiered testing approach to balance fast feedback loops with exhaustive 
 
 ---
 
-## 🧪 Running Tests Locally
+## Running Tests Locally
 
 You can use [act](https://github.com/nektos/act) to run these workflows locally.
 
@@ -111,7 +111,7 @@ act -j summary -W .github/workflows/test-auth.yml --secret-file .secrets
 
 ---
 
-## � Troubleshooting
+## Troubleshooting
 
 | Problem                                 | Likely Workflow       | Check                                          |
 | :-------------------------------------- | :-------------------- | :--------------------------------------------- |
