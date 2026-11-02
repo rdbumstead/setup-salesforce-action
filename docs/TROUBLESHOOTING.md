@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-## 🐞 Common Issues and Solutions
+## Common Issues and Solutions
 
 ---
 
@@ -106,33 +106,33 @@ Error: grant type not supported
 1. **Enable External Client Apps** in your Salesforce org:
 
    ```
-   Setup → Quick Find → "External Client Apps"
-   → Settings (in External Client Apps section)
-   → Toggle ON "Enable External Client Apps"
-   → Save
+   Setup -> Quick Find -> "External Client Apps"
+   -> Settings (in External Client Apps section)
+   -> Toggle ON "Enable External Client Apps"
+   -> Save
    ```
 
 2. **Create or migrate to External Client App** (recommended):
 
    ```
-   Setup → Quick Find → "External Client Apps"
-   → New
-   → Name: "GitHub Actions CI"
-   → Enable OAuth Settings
-   → Use digital signatures (upload certificate)
-   → Add OAuth scopes: api, refresh_token, offline_access
-   → Save
-   → Copy Consumer Key
+   Setup -> Quick Find -> "External Client Apps"
+   -> New
+   -> Name: "GitHub Actions CI"
+   -> Enable OAuth Settings
+   -> Use digital signatures (upload certificate)
+   -> Add OAuth scopes: api, refresh_token, offline_access
+   -> Save
+   -> Copy Consumer Key
    ```
 
 3. **If using existing Connected App**, verify policies:
 
    ```
-   Setup → App Manager → [Your Connected App]
-   → Edit Policies
-   → OAuth Policies → Permitted Users: "All users may self-authorize"
-   → IP Relaxation: "Relax IP restrictions"
-   → Save
+   Setup -> App Manager -> [Your Connected App]
+   -> Edit Policies
+   -> OAuth Policies -> Permitted Users: "All users may self-authorize"
+   -> IP Relaxation: "Relax IP restrictions"
+   -> Save
    ```
 
 4. **Wait 2-10 minutes** for the changes to propagate
@@ -161,19 +161,19 @@ Error: This feature is not enabled for your organization
 **Option 1: Enable the Feature First**
 
 ```
-Setup → Quick Find → "External Client Apps"
-→ Settings
-→ Toggle ON "Enable External Client Apps"
-→ Save
-→ Return to External Client Apps → New (now available)
+Setup -> Quick Find -> "External Client Apps"
+-> Settings
+-> Toggle ON "Enable External Client Apps"
+-> Save
+-> Return to External Client Apps -> New (now available)
 ```
 
 **Option 2: Check User Permissions**
 
 Required permissions:
 
-- ✅ "Customize Application" permission
-- ✅ OR "Manage External Client Apps" permission
+- "Customize Application" permission
+- OR "Manage External Client Apps" permission
 - System Administrator profile has these by default
 
 **Option 3: Use Connected App Instead (Legacy)**
@@ -181,9 +181,9 @@ Required permissions:
 If your org is on a pre-Winter '25 release, you can use traditional Connected Apps:
 
 ```
-Setup → App Manager → New Connected App
-→ Follow same OAuth configuration
-→ Authentication works identically
+Setup -> App Manager -> New Connected App
+-> Follow same OAuth configuration
+-> Authentication works identically
 ```
 
 ---
@@ -268,10 +268,10 @@ Error: certificate validation failed
 2. **Upload the new certificate** to your External Client App:
 
    ```
-   Setup → External Client Apps → [Your App]
-   → Edit
-   → Use digital signatures → Choose File → Select server.crt
-   → Save
+   Setup -> External Client Apps -> [Your App]
+   -> Edit
+   -> Use digital signatures -> Choose File -> Select server.crt
+   -> Save
    ```
 
 3. **Update GitHub secret** with new private key:
@@ -335,19 +335,19 @@ Error: user hasn't approved this consumer
 **Solution**: Adjust External Client App policies
 
 ```
-Setup → External Client Apps → [Your App] → Manage
-→ Edit Policies
-→ OAuth Policies:
+Setup -> External Client Apps -> [Your App] -> Manage
+-> Edit Policies
+-> OAuth Policies:
    - Permitted Users: "All users may self-authorize"
    - IP Relaxation: "Relax IP restrictions"
-→ Save
+-> Save
 ```
 
 Wait 2-10 minutes for policies to propagate.
 
 ---
 
-## 🆕 Winter '25 Authentication Quick Reference
+## Winter '25 Authentication Quick Reference
 
 | Issue                            | Solution                                  |
 | -------------------------------- | ----------------------------------------- |
@@ -376,10 +376,10 @@ Wait 2-10 minutes for policies to propagate.
 2. **Create new External Client App**:
 
    ```
-   Setup → External Client Apps → New
-   → Upload same server.crt certificate
-   → Use same OAuth scopes
-   → Save
+   Setup -> External Client Apps -> New
+   -> Upload same server.crt certificate
+   -> Use same OAuth scopes
+   -> Save
    ```
 
 3. **Update GitHub secret** with new Consumer Key:
@@ -394,7 +394,7 @@ Wait 2-10 minutes for policies to propagate.
 
 6. **Deactivate old Connected App** after confirming new one works:
    ```
-   Setup → App Manager → [Old Connected App] → Edit → Deactivate
+   Setup -> App Manager -> [Old Connected App] -> Edit -> Deactivate
    ```
 
 **No downtime required:** You can create the External Client App and test it before deactivating the Connected App.
@@ -462,7 +462,7 @@ Error: INVALID_SESSION_ID: Session expired or invalid
     instance_url: "https://your-org.my.salesforce.com" # Must match token
 ```
 
-> ⚠️ **Note**: Access tokens are recommended only for manual/ad-hoc deployments, not production CI/CD.
+> **Note**: Access tokens are recommended only for manual/ad-hoc deployments, not production CI/CD.
 
 ---
 
@@ -482,7 +482,7 @@ Installing sfdx-git-delta...
 1. Check cache hit in action logs:
 
 ```
-Cache restored from key: sf-v2-Linux-node20-...
+Cache restored from key: sf-v3-Linux-node26-...
 ```
 
 **Solution**:
@@ -499,7 +499,7 @@ Cache restored from key: sf-v2-Linux-node20-...
 
 ```yaml
 # Change any input to invalidate cache
-node_version: "20" # Change to "18" temporarily
+node_version: "26" # Change to "24" temporarily
 ```
 
 ---
@@ -520,7 +520,7 @@ Installed: @salesforce/cli/2.25.0  # But you want 2.30.8
 cli_version: "2.30.8"
 
 # Method 2: Change Node version temporarily
-node_version: "18" # Then change back to "20"
+node_version: "24" # Then change back to "26"
 ```
 
 ---
@@ -803,7 +803,7 @@ Then check full action logs in GitHub Actions UI.
 
 1. **Check full action logs**:
 
-   - Go to GitHub Actions → Your workflow run → Expand each step
+   - Go to GitHub Actions, then your workflow run, then expand each step
 
 2. **Search existing issues**:
 

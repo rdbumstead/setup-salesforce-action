@@ -34,7 +34,7 @@ In enterprise integration architecture (e.g., MuleSoft), a **System API** is a f
 - Changes rarely and only with major version bumps
 - Is consumed by higher-level "Process" and "Experience" APIs
 
-This action follows the same pattern. It is **not** an application—it is a **primitive** that other workflows depend on.
+This action follows the same pattern. It is **not** an application. It is a **primitive** that other workflows depend on.
 
 ### Core Principles
 
@@ -44,7 +44,7 @@ This action follows the same pattern. It is **not** an application—it is a **p
 | **Contract-First**         | Outputs and environment variables are stable interfaces. Breaking changes require major version bumps.                                     |
 | **Zero Policy**            | Detection informs, but does not decide. The action reports org type, API version, etc., but never implements "if sandbox then do X" logic. |
 | **Composability**          | The action does one thing well: provision a validated Salesforce execution environment. Everything else is the consumer's responsibility.  |
-| **Backward Compatibility** | Defaults never change in minor versions. New features are additive.                                                                        |
+| **Backward Compatibility** | Defaults never change in minor versions. Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out. New features are additive.                                                                        |
 
 ### Why Composite Actions (Not TypeScript)
 
@@ -56,20 +56,20 @@ This action is implemented as a **Composite Action** (YAML + shell scripts) rath
 | **Build Step Required**    | No                | Yes (`npm run build`)         |
 | **Dependencies**           | Shell utilities   | Node.js runtime               |
 | **Contributor Friction**   | Low (YAML + bash) | Higher (TypeScript knowledge) |
-| **Release Process**        | Tag and go        | Build → Commit dist → Tag     |
-| **Right for This Action?** | ✅ Yes            | ❌ Overkill                   |
+| **Release Process**        | Tag and go        | Build -> Commit dist -> Tag     |
+| **Right for This Action?** | Yes            | Overkill                   |
 
 **What this action actually does:**
 
 ```
-1. npm install @salesforce/cli          → Shell command
-2. sf org login jwt                      → Shell command
-3. sf plugins install sfdx-git-delta    → Shell command
-4. sf org display --json | jq            → Shell command + parsing
-5. Check exit codes, set outputs        → Shell logic
+1. npm install @salesforce/cli          -> Shell command
+2. sf org login jwt                      -> Shell command
+3. sf plugins install sfdx-git-delta    -> Shell command
+4. sf org display --json | jq            -> Shell command + parsing
+5. Check exit codes, set outputs        -> Shell logic
 ```
 
-This is **CLI orchestration**—exactly what Composite Actions are designed for.
+This is **CLI orchestration**, exactly what Composite Actions are designed for.
 
 ---
 
@@ -285,11 +285,11 @@ These outputs are **stable interfaces**. Changes require major version bumps.
 
 On successful completion, the action **guarantees**:
 
-1. ✅ `sf` command is installed and callable
-2. ✅ Authenticated org is reachable (unless `skip_auth: true`)
-3. ✅ Instance URL is resolved
-4. ✅ API version is determined
-5. ✅ No secrets appear in logs
+1. `sf` command is installed and callable
+2. Authenticated org is reachable (unless `skip_auth: true`)
+3. Instance URL is resolved
+4. API version is determined
+5. No secrets appear in logs
 
 If any invariant fails, the action **fails fast** with a clear `INVARIANT VIOLATION` message.
 
@@ -447,8 +447,8 @@ After review, this action will remain a stable, monolithic CLI wrapper to priori
 | Version            | Purpose                                | Stability                         | Example                       |
 | ------------------ | -------------------------------------- | --------------------------------- | ----------------------------- |
 | **MAJOR** (v3.x.x) | Breaking changes, architectural shifts | Production-ready after `.0` patch | v3.0.0 (invariant validation) |
-| **MINOR** (v3.1.x) | New features, additive changes         | Immediate production use          | v3.1.0 (new optional input)   |
-| **PATCH** (v3.1.1) | Bug fixes, documentation               | Immediate production use          | v3.1.1 (fix auth timeout)     |
+| **MINOR** (v3.2.x) | New features, additive changes         | Immediate production use          | v3.2.0 (new optional input)   |
+| **PATCH** (v3.2.1) | Bug fixes, documentation               | Immediate production use          | v3.2.1 (fix auth timeout)     |
 
 ### Release Cadence
 
@@ -462,15 +462,15 @@ After review, this action will remain a stable, monolithic CLI wrapper to priori
 
 ```bash
 # Create release
-git tag -a v3.1.0 -m "feat: add custom alias support"
-git push origin v3.1.0
+git tag -a v3.2.0 -m "feat: add custom alias support"
+git push origin v3.2.0
 
 # Update major version pointer (force)
-git tag -fa v3 -m "Update v3 to latest v3.1.0"
+git tag -fa v3 -m "Update v3 to latest v3.2.0"
 git push origin v3 --force
 ```
 
-**User Impact**: Users pinned to `@v3` automatically get v3.1.0. Users pinned to `@v3.0.0` stay on exact version.
+**User Impact**: Users pinned to `@v3` automatically get v3.2.0. Users pinned to `@v3.0.0` stay on exact version.
 
 ### Backward Compatibility Promise
 
@@ -478,7 +478,7 @@ git push origin v3 --force
 | ------------ | --------------------------------------------------- |
 | **Inputs**   | Never removed, only deprecated with 6-month warning |
 | **Outputs**  | Maintained for 1 major version after deprecation    |
-| **Defaults** | Never change in PATCH or MINOR releases             |
+| **Defaults** | Never change in PATCH or MINOR releases. Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out. |
 | **Behavior** | Additive only in MINOR releases                     |
 
 ### Deprecation Process
@@ -492,7 +492,7 @@ git push origin v3 --force
 Example warning:
 
 ```
-⚠️  DEPRECATION WARNING: Input 'sfdx_version' is deprecated.
+DEPRECATION WARNING: Input 'sfdx_version' is deprecated.
    Use 'cli_version' instead. See: https://github.com/rdbumstead/setup-salesforce-action/blob/main/docs/MIGRATION.md
 ```
 
@@ -506,12 +506,12 @@ Example warning:
 strategy:
   matrix:
     os: [ubuntu-latest, macos-latest, windows-latest]
-    node: [18, 20]
+    node: [22, 24, 26]
     cli: [latest, 2.30.8]
     auth: [jwt, sfdx-url, access-token, skip]
 ```
 
-**Coverage**: 3 OS × 2 Node × 2 CLI × 4 Auth = 48 combinations
+**Coverage**: 3 OS x 3 Node x 2 CLI x 4 Auth = 72 combinations
 
 **Optimized**: Critical paths tested across all OSes, edge cases on Ubuntu only.
 
@@ -706,7 +706,7 @@ Common issues:
 **A**: Yes! GitHub Actions cache is repository-scoped. If two workflows use the same cache key, they share the cache. Design your cache keys carefully:
 
 ```yaml
-key: sf-v3-${{ runner.os }}-node20-cli-latest-tools${{ hashFiles('plugins.txt') }}
+key: sf-v3-${{ runner.os }}-node26-cli-latest-tools${{ hashFiles('plugins.txt') }}
 ```
 
 ### Q: What's the fastest way to run the action?
@@ -750,7 +750,7 @@ key: sf-v3-${{ runner.os }}-node20-cli-latest-tools${{ hashFiles('plugins.txt') 
 : Design technique where current versions export interfaces (e.g., `cli_binary_path`) that aren't fully used yet but enable future modularization without breaking changes.
 
 **Monolith**
-: A single, self-contained codebase where all functionality is in one file or module. Not inherently bad—appropriate for primitives with well-defined scope. Becomes problematic when complexity grows without clear internal structure.
+: A single, self-contained codebase where all functionality is in one file or module. Not inherently bad, and appropriate for primitives with well-defined scope. Becomes problematic when complexity grows without clear internal structure.
 
 **Modularization**
 : The process of splitting a monolithic codebase into smaller, focused components (modules) with clear interfaces. Can be external (separate repositories) or internal (subdirectories in one repo).
@@ -773,7 +773,7 @@ key: sf-v3-${{ runner.os }}-node20-cli-latest-tools${{ hashFiles('plugins.txt') 
 : A cache **hit** occurs when GitHub Actions finds existing cached data matching the cache key. A cache **miss** means no matching cache exists, triggering a fresh download/install. Cache hits significantly reduce workflow duration.
 
 **Matrix Testing**
-: A GitHub Actions strategy that runs the same workflow across multiple configurations (e.g., OS × Node version × CLI version). Example: `ubuntu-latest` + `macos-latest` + `windows-latest` = 3 test runs.
+: A GitHub Actions strategy that runs the same workflow across multiple configurations (e.g., OS x Node version x CLI version). Example: `ubuntu-latest` + `macos-latest` + `windows-latest` = 3 test runs.
 
 ### Salesforce Terms
 
@@ -858,22 +858,22 @@ The current `action.yml` is ~1,200 lines. While it works well, this creates:
 
 ```
 setup-salesforce-action/
-├── action.yml                 # Controller (thin orchestrator)
-├── modules/
-│   ├── cli-core/
-│   │   └── action.yml         # Kernel: install CLI, manage cache
-│   ├── org-auth/
-│   │   └── action.yml         # Identity: auth only
-│   ├── project-context/
-│   │   └── action.yml         # Context: parse sfdx-project.json
-│   ├── quality-tools/
-│   │   └── action.yml         # Scanner, ESLint, Prettier, Jest
-│   └── deploy-tools/
-│       └── action.yml         # Delta, Hardis, Packaging plugins
-├── contracts/
-│   └── INTERFACE_CONTRACT.md  # ENV vars, JSON schemas
-└── .github/workflows/
-    └── test-modules.yml       # Independent module tests
+|-- action.yml                 # Controller (thin orchestrator)
+|-- modules/
+|   |-- cli-core/
+|   |   `-- action.yml         # Kernel: install CLI, manage cache
+|   |-- org-auth/
+|   |   `-- action.yml         # Identity: auth only
+|   |-- project-context/
+|   |   `-- action.yml         # Context: parse sfdx-project.json
+|   |-- quality-tools/
+|   |   `-- action.yml         # Scanner, ESLint, Prettier, Jest
+|   `-- deploy-tools/
+|       `-- action.yml         # Delta, Hardis, Packaging plugins
+|-- contracts/
+|   `-- INTERFACE_CONTRACT.md  # ENV vars, JSON schemas
+`-- .github/workflows/
+    `-- test-modules.yml       # Independent module tests
 ```
 
 ### The Strangler Pattern
@@ -952,14 +952,14 @@ You can use **TypeScript utilities** within a **Composite Action**. This gives y
 
 ```
 setup-salesforce-action/
-├── action.yml                 # The Orchestrator (Composite)
-├── package.json               # Only for the script dependencies
-├── tsconfig.json              # TypeScript config
-├── scripts/
-│   └── src/
-│       └── analyze-project.ts # The "Context Engine" source
-└── dist/
-    └── index.js               # The bundled, single-file executable (Committed)
+|-- action.yml                 # The Orchestrator (Composite)
+|-- package.json               # Only for the script dependencies
+|-- tsconfig.json              # TypeScript config
+|-- scripts/
+|   `-- src/
+|       `-- analyze-project.ts # The "Context Engine" source
+`-- dist/
+    `-- index.js               # The bundled, single-file executable (Committed)
 ```
 
 #### Example: Project Context Engine
@@ -1015,7 +1015,7 @@ async function run() {
     }
 
     // Output Results
-    console.log(`✅ Analysis Complete: Strategy=${strategy}`);
+    console.log(`Analysis Complete: Strategy=${strategy}`);
     core.setOutput("is_sfdx_project", isSfdxProject);
     core.setOutput("strategy", strategy);
     core.setOutput("auto_plugins", neededPlugins.join(","));
@@ -1063,7 +1063,7 @@ Use `@vercel/ncc` to compile everything into a single file:
   if: steps.context.outputs.auto_plugins != ''
   shell: bash
   run: |
-    echo "🔧 Installing suggested plugins: ${{ steps.context.outputs.auto_plugins }}"
+    echo "Installing suggested plugins: ${{ steps.context.outputs.auto_plugins }}"
     sf plugins install ${{ steps.context.outputs.auto_plugins }}
 ```
 
@@ -1210,4 +1210,4 @@ Use `@vercel/ncc` to compile everything into a single file:
 
 ---
 
-_Last Updated: 2026-01-19 (v3.0.0)_
+_Last Updated: 2026-11-02 (v3.1.0)_

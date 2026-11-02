@@ -37,12 +37,12 @@ jobs:
       - name: Comprehensive CLI Health Check
         shell: bash
         run: |
-          echo "🔍 Verifying CLI functionality..."
+          echo "Verifying CLI functionality..."
           sf --version || exit 1
           sf plugins --core || exit 1
           sf --help >/dev/null 2>&1 || exit 1
           sf config list >/dev/null 2>&1 || exit 1
-          echo "✅ All checks passed"
+          echo "All checks passed"
 
   cli-only:
     name: CLI Installation Only
@@ -67,7 +67,7 @@ jobs:
           sf plugins
 
           echo ""
-          echo "✅ CLI installed successfully without authentication"
+          echo "CLI installed successfully without authentication"
 
   error-handling:
     name: Error Handling
@@ -88,9 +88,9 @@ jobs:
       - name: Verify Error Was Caught
         run: |
           if [ "${{ steps.test-missing-inputs.outcome }}" = "failure" ]; then
-            echo "✅ Action correctly failed with missing inputs"
+            echo "Action correctly failed with missing inputs"
           else
-            echo "❌ Action should have failed with missing inputs"
+            echo "ERROR: Action should have failed with missing inputs"
             exit 1
           fi
 
@@ -118,12 +118,12 @@ jobs:
 
       - name: Verify Cache Was Used
         run: |
-          echo "📦 Cache behavior test completed"
+          echo "Cache behavior test completed"
           echo ""
           echo "Both runs completed successfully."
           echo "Cache hit/miss can be verified in the action logs above."
           echo ""
-          echo "✅ Cache test passed"
+          echo "Cache test passed"
 
   cache-granularity:
     name: Cache Granularity
@@ -156,7 +156,7 @@ jobs:
 
       - name: Verify
         run: |
-          echo "✅ Cache granularity test completed"
+          echo "Cache granularity test completed"
           echo "All three granularity options accepted: major, minor, exact"
 
   cli-retry:
@@ -178,9 +178,9 @@ jobs:
       - name: Verify Retry Behavior
         run: |
           if [ "${{ steps.setup-retry.outcome }}" = "failure" ]; then
-            echo "✅ CLI install failed after retries as expected"
+            echo "CLI install failed after retries as expected"
           else
-            echo "❌ Action unexpectedly succeeded with invalid CLI version"
+            echo "ERROR: Action unexpectedly succeeded with invalid CLI version"
             exit 1
           fi
 
@@ -210,14 +210,14 @@ jobs:
           # Verify each directory is present with --source-dir prefix
           for dir in force-app src packages/core; do
             if [[ "$FLAGS" == *"--source-dir $dir"* ]]; then
-              echo "✅ Found: --source-dir $dir"
+              echo "Found: --source-dir $dir"
             else
-              echo "❌ Missing: --source-dir $dir"
+              echo "ERROR: Missing: --source-dir $dir"
               exit 1
             fi
           done
 
-          echo "✅ source_flags output correct"
+          echo "source_flags output correct"
 
   pinned-cli-version:
     name: Pinned CLI Version
@@ -240,9 +240,9 @@ jobs:
           echo "Installed: $INSTALLED"
 
           if [[ "$INSTALLED" == *"2.67.7"* ]]; then
-            echo "✅ Correct CLI version installed"
+            echo "Correct CLI version installed"
           else
-            echo "❌ Expected version 2.67.7, got: $INSTALLED"
+            echo "ERROR: Expected version 2.67.7, got: $INSTALLED"
             exit 1
           fi
 
@@ -263,7 +263,7 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "## 🛡️ Critical Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Critical Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "These tests must pass for every commit." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -271,66 +271,66 @@ jobs:
           FAILED=false
 
           if [ "${{ needs.health-check.result }}" = "success" ]; then
-            echo "✅ **Health Check**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Health Check**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Health Check**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Health Check**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.cli-only.result }}" = "success" ]; then
-            echo "✅ **CLI Installation Only**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**CLI Installation Only**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **CLI Installation Only**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**CLI Installation Only**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.error-handling.result }}" = "success" ]; then
-            echo "✅ **Error Handling**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Handling**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Error Handling**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Handling**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.cache-behavior.result }}" = "success" ]; then
-            echo "✅ **Cache Behavior**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Cache Behavior**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Cache Behavior**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Cache Behavior**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.cache-granularity.result }}" = "success" ]; then
-            echo "✅ **Cache Granularity**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Cache Granularity**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Cache Granularity**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Cache Granularity**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.cli-retry.result }}" = "success" ]; then
-            echo "✅ **CLI Install Retry**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**CLI Install Retry**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **CLI Install Retry**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**CLI Install Retry**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.source-flags.result }}" = "success" ]; then
-            echo "✅ **Source Flags Output**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Source Flags Output**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Source Flags Output**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Source Flags Output**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           if [ "${{ needs.pinned-cli-version.result }}" = "success" ]; then
-            echo "✅ **Pinned CLI Version**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Pinned CLI Version**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Pinned CLI Version**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Pinned CLI Version**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "$FAILED" = true ]; then
-            echo "❌ **Status**: One or more critical tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Status**: One or more critical tests failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
-            echo "✅ **Status**: All critical tests passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Status**: All critical tests passed" >> $GITHUB_STEP_SUMMARY
           fi

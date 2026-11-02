@@ -12,7 +12,7 @@ Complete guide for migrating from v1 to v2 of the Setup Salesforce CLI Action.
 
 ## What's New in v2
 
-### 1. Cross-Platform Support 🌐
+### 1. Cross-Platform Support
 
 Run on Windows and macOS in addition to Linux:
 
@@ -27,7 +27,7 @@ jobs:
       - uses: rdbumstead/setup-salesforce-action@v2
 ```
 
-### 2. Custom Salesforce CLI Plugin Installation 🔌
+### 2. Custom Salesforce CLI Plugin Installation
 
 Install any SF CLI plugin you need:
 
@@ -37,7 +37,7 @@ Install any SF CLI plugin you need:
     custom_sf_plugins: "sfdx-hardis,@salesforce/plugin-packaging"
 ```
 
-### 3. Enhanced Multi-Directory Support 📂
+### 3. Enhanced Multi-Directory Support
 
 New `source_flags` output for seamless multi-directory deployments:
 
@@ -50,11 +50,11 @@ New `source_flags` output for seamless multi-directory deployments:
 - run: sf project deploy start ${{ steps.setup.outputs.source_flags }}
 ```
 
-### 4. Automatic Directory Creation 🛠️
+### 4. Automatic Directory Creation
 
 No more errors when `force-app` doesn't exist - v2 creates missing default directories automatically.
 
-### 5. Better Developer Experience 💪
+### 5. Better Developer Experience
 
 - Enhanced error messages with actionable guidance
 - Network retry logic (3 attempts for resilience)
@@ -103,19 +103,19 @@ git push origin main
 | Feature                 | v1  | v2  | Notes                 |
 | ----------------------- | --- | --- | --------------------- |
 | **Platform Support**    |     |     |                       |
-| Linux (Ubuntu)          | ✅  | ✅  | Fastest               |
-| Windows                 | ❌  | ✅  | Full support          |
-| macOS                   | ❌  | ✅  | Full support          |
+| Linux (Ubuntu)          | Yes  | Yes  | Fastest               |
+| Windows                 | No  | Yes  | Full support          |
+| macOS                   | No  | Yes  | Full support          |
 | **Plugin Management**   |     |     |                       |
-| sfdx-git-delta          | ✅  | ✅  | Unchanged             |
-| Code Analyzer           | ✅  | ✅  | Unchanged             |
-| Custom SF Plugins       | ❌  | ✅  | **New in v2**         |
+| sfdx-git-delta          | Yes  | Yes  | Unchanged             |
+| Code Analyzer           | Yes  | Yes  | Unchanged             |
+| Custom SF Plugins       | No  | Yes  | **New in v2**         |
 | **Advanced Features**   |     |     |                       |
-| Multi-Directory Support | ⚠️  | ✅  | Manual → Automatic    |
-| source_flags Output     | ❌  | ✅  | **New in v2**         |
-| Network Retry Logic     | ⚠️  | ✅  | Enhanced (3 attempts) |
+| Multi-Directory Support | Partial  | Yes  | Manual to Automatic    |
+| source_flags Output     | No  | Yes  | **New in v2**         |
+| Network Retry Logic     | Partial  | Yes  | Enhanced (3 attempts) |
 
-✅ = Supported | ⚠️ = Limited/Manual | ❌ = Not Available
+Yes = Supported | Partial = Limited/Manual | No = Not Available
 
 ## Rollback Plan
 
@@ -131,10 +131,10 @@ uses: rdbumstead/setup-salesforce-action@v1
 
 Need help with migration?
 
-- 🐞 [Report Issue](https://github.com/rdbumstead/setup-salesforce-action/issues)
-- 💡 [Ask Question](https://github.com/rdbumstead/setup-salesforce-action/discussions)
-- 📧 [Email Support](mailto:ryan@ryanbumstead.com)
+- [Report Issue](https://github.com/rdbumstead/setup-salesforce-action/issues)
+- [Ask Question](https://github.com/rdbumstead/setup-salesforce-action/discussions)
+- [Email Support](mailto:ryan@ryanbumstead.com)
 
 ---
 
-**Happy migrating!** 🚀
+**Happy migrating!**

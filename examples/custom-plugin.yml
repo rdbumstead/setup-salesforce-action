@@ -29,4 +29,4 @@ jobs:
           # Example: Run hardis command on your setup layer
           sf hardis project audit apiversion --help
 
-          echo "✅ Hardis commands run cleanly on setup-salesforce-cli"
+          echo "Hardis commands run cleanly on setup-salesforce-cli"

@@ -15,29 +15,29 @@ Deterministic, secure Salesforce CLI setup for real CI/CD pipelines.
 
 ---
 
-## 🚀 Why This Action
+## Why This Action
 
 Most Salesforce pipelines fail due to:
 
-- ❌ Non-deterministic CLI installs
-- ❌ Slow, repeated setup
-- ❌ Fragile auth handling
-- ❌ One-size-fits-all workflows
+- Non-deterministic CLI installs
+- Slow, repeated setup
+- Fragile auth handling
+- One-size-fits-all workflows
 
 This action solves those problems by providing a **stable execution layer** that workflows can reliably depend on.
 
-## ✨ Key Capabilities
+## Key Capabilities
 
-- **⚡ Fast**: ~20–60s with caching
-- **🔐 Secure Auth**: JWT, SFDX Auth URL, or Access Token
-- **📦 Smart Caching**: CLI + plugins cached across runs
-- **📂 Mono-Repo Ready**: Multi-directory source resolution
-- **🔌 Extensible**: Optional plugins and dev tools
-- **🧪 Well Tested**: Linux, macOS, and Windows runners
+- **Fast**: ~20 to 60s with caching
+- **Secure Auth**: JWT, SFDX Auth URL, or Access Token
+- **Smart Caching**: CLI + plugins cached across runs
+- **Mono-Repo Ready**: Multi-directory source resolution
+- **Extensible**: Optional plugins and dev tools
+- **Well Tested**: Linux, macOS, and Windows runners
 
 ---
 
-## 🧩 Quick Start
+## Quick Start
 
 ### Minimal Setup (CLI + Auth)
 
@@ -65,7 +65,7 @@ This action solves those problems by providing a **stable execution layer** that
 
 ---
 
-## 🔐 Authentication Methods
+## Authentication Methods
 
 | Method            | Use Case               |
 | ----------------- | ---------------------- |
@@ -82,7 +82,7 @@ sfdx_auth_url: ${{ secrets.SFDX_AUTH_URL }}
 
 ---
 
-## 📤 Outputs
+## Outputs
 
 Useful for conditional and reusable workflows:
 
@@ -107,15 +107,15 @@ Useful for conditional and reusable workflows:
 
 ---
 
-## 🔒 Guaranteed Invariants
+## Guaranteed Invariants
 
 This action guarantees the following invariants on successful completion:
 
-- ✅ **CLI installed and callable** - `sf` command is available and functional
-- ✅ **Authenticated org available** - Org is reachable under the specified alias (unless `skip_auth: true`)
-- ✅ **Instance URL resolved** - Org instance URL is known
-- ✅ **API version resolved** - Salesforce API version is determined
-- ✅ **No secrets in logs** - Sensitive credentials are never written to logs
+- **CLI installed and callable** - `sf` command is available and functional
+- **Authenticated org available** - Org is reachable under the specified alias (unless `skip_auth: true`)
+- **Instance URL resolved** - Org instance URL is known
+- **API version resolved** - Salesforce API version is determined
+- **No secrets in logs** - Sensitive credentials are never written to logs
 
 If any invariant fails, the action will **fail fast** and report the specific violation.
 
@@ -131,7 +131,7 @@ This makes the action suitable for use as a primitive in complex CI/CD workflows
 
 ---
 
-## 📋 Versioning Policy
+## Versioning Policy
 
 This action follows strict [Semantic Versioning](https://semver.org/):
 
@@ -141,9 +141,9 @@ This action follows strict [Semantic Versioning](https://semver.org/):
 
 ### Guarantees
 
-- ✅ Defaults never change in MINOR versions (e.g., CLI version, Node version)
-- ✅ Breaking changes only in MAJOR versions
-- ✅ Consumers should pin to MAJOR version: `@v3`
+- Defaults never change in MINOR versions (e.g., CLI version, Node version). Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out.
+- Breaking changes only in MAJOR versions
+- Consumers should pin to MAJOR version: `@v3`
 
 ### What Counts as Breaking
 
@@ -156,7 +156,7 @@ This action follows strict [Semantic Versioning](https://semver.org/):
 
 ---
 
-## ⚡ Caching Strategy
+## Caching Strategy
 
 This action uses intelligent caching to optimize setup time (~20-60s cached vs ~1.5-3min cold).
 
@@ -189,12 +189,12 @@ When explicit version specified (e.g., `cli_version: "2.30.8"`):
 
 ### Cache Hit/Miss Scenarios
 
-**Cache HIT** ✅:
+**Cache HIT**:
 
 - Same OS, Node version, CLI version, and tooling
 - CLI already functional from previous run
 
-**Cache MISS** ❌:
+**Cache MISS**:
 
 - Different OS or Node version
 - CLI version changed (or monthly rotation occurred)
@@ -211,19 +211,19 @@ To force a fresh install:
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Full documentation lives in `/docs`:
 
-- 📖 [Action Overview](docs/OVERVIEW.md)
-- 🚀 [Quick Start Guide](docs/QUICKSTART.md)
-- 🔄 [Migration Guide](docs/MIGRATION.md)
-- 🧪 [Testing Strategy](docs/TESTING_STRATEGY.md)
-- 🖥️ [Platform Support](docs/PLATFORM_SUPPORT.md)
-- 🔧 [Troubleshooting](docs/TROUBLESHOOTING.md)
-- 🏗️ [Architecture](docs/ARCHITECTURE.md) _(new in v3.0)_
+- [Action Overview](docs/OVERVIEW.md)
+- [Quick Start Guide](docs/QUICKSTART.md)
+- [Migration Guide](docs/MIGRATION.md)
+- [Testing Strategy](docs/TESTING_STRATEGY.md)
+- [Platform Support](docs/PLATFORM_SUPPORT.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Architecture](docs/ARCHITECTURE.md) _(new in v3.0)_
 
-### 🧭 Roadmap
+### Roadmap
 
 - [x] Cross-platform support (Windows, macOS)
 - [x] Custom plugin installation
@@ -236,7 +236,7 @@ Full documentation lives in `/docs`:
 
 ---
 
-## 🙏 Credits & Acknowledgments
+## Credits & Acknowledgments
 
 This action orchestrates the installation of several best-in-class open-source tools. We recommend starring their repositories and reviewing their specific documentation:
 
@@ -258,9 +258,9 @@ We explicitly verify compatibility with popular ecosystem plugins in our [test s
 
 ---
 
-## 🤝 Support
+## Support
 
-- 🐞 **Issues**: [GitHub Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
-- 💬 **LinkedIn**: [Ryan Bumstead](https://linkedin.com/in/ryanbumstead)
+- **Issues**: [GitHub Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
+- **LinkedIn**: [Ryan Bumstead](https://linkedin.com/in/ryanbumstead)
 
 _Built for Salesforce teams who want boring, repeatable pipelines._

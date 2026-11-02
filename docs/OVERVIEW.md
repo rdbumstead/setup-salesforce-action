@@ -1,10 +1,10 @@
-# Setup Salesforce CLI Action – Overview
+# Setup Salesforce CLI Action: Overview
 
 This document explains what this action is, what it intentionally is **not**, and how it fits into a larger Salesforce CI/CD architecture.
 
 ---
 
-## 🎯 Design Philosophy
+## Design Philosophy
 
 This action is intentionally **foundational**.
 
@@ -20,7 +20,7 @@ Instead, it provides a **deterministic execution layer** that workflows can safe
 
 ---
 
-## 🧱 What This Action Provides
+## What This Action Provides
 
 ### Deterministic CLI Environment
 
@@ -40,7 +40,7 @@ Authentication is **validated** and **introspected**, not assumed.
 
 ---
 
-## 🔐 Authentication Design
+## Authentication Design
 
 This action treats authentication as **infrastructure**, not configuration:
 
@@ -70,7 +70,7 @@ This action treats authentication as **infrastructure**, not configuration:
 
 ---
 
-## 📦 Caching Strategy
+## Caching Strategy
 
 This action caches:
 
@@ -88,7 +88,7 @@ The design favors **maintainability** over micro-optimizations.
 
 ---
 
-## 📂 Source Directory Resolution
+## Source Directory Resolution
 
 Modern Salesforce projects are often:
 
@@ -106,7 +106,7 @@ This allows downstream workflows to remain **simple** and **generic**.
 
 ---
 
-## 🔌 Optional Tooling Model
+## Optional Tooling Model
 
 All tooling is **opt-in**:
 
@@ -121,7 +121,7 @@ All tooling is **opt-in**:
 
 ---
 
-## 🧪 Testing & Reliability
+## Testing & Reliability
 
 This action is tested against:
 
@@ -141,7 +141,7 @@ The goal is **predictable failure**, not silent success.
 
 ---
 
-## 🧩 Intended Usage Pattern
+## Intended Usage Pattern
 
 This action is designed to be consumed by:
 
@@ -157,7 +157,7 @@ It pairs naturally with:
 
 ---
 
-## 🛣️ Long-Term Direction
+## Long-Term Direction
 
 This action is the first building block of a larger **Salesforce DevOps platform** that will include:
 
@@ -169,7 +169,7 @@ Those concerns are intentionally **out of scope** here.
 
 ---
 
-## ✅ Summary
+## Summary
 
 If you need:
 

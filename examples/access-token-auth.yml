@@ -33,7 +33,7 @@ jobs:
 
       - name: Deploy
         run: sf project deploy start --source-dir force-app --target-org target-org
-# ⚠️ WARNING: Access tokens are short-lived (typically 2 hours)
+# WARNING: Access tokens are short-lived (typically 2 hours)
 # This method is recommended only for:
 # - Manual/ad-hoc deployments
 # - Integration with external token providers

@@ -5,13 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - Unreleased
+
+### Changed
+
+- **Default Node.js version is now 26** (was 20). Node 20 reached its upstream end of life on 2026-04-30, and the latest Salesforce CLI requires Node 22 or newer. Node 26 is the current LTS line. This is a documented exception to the rule that defaults never change in MINOR releases, which now allows moving the default of a runtime that has reached its upstream end of life. Set `node_version` explicitly to keep a different supported version.
+- The test matrix now covers Node 22, 24 and 26 (was 18 and 20), because the Salesforce CLI declares `node >=22.0.0`.
+- **Plugins with native addons may not build on Node 26 yet.** For example, `@dxatscale/sfpowerscripts` fails to compile its native module on Node 26. If your workflow installs a plugin like that, set `node_version: "24"`.
+- **Caches roll over once.** The Node version is part of the cache key, so the first run after upgrading is a cache miss. Later runs hit the new cache as usual.
+- **Log output no longer carries emoji.** Step messages and summary lines use plain text prefixes such as `ERROR:`, `WARNING:` and `INFO:`. Anyone matching log text on a glyph needs to update the match.
+- Documentation no longer uses emoji, arrows or box drawing characters.
+
+### Added
+
+- A clean text check in CI that fails when any tracked file holds a character outside ASCII.
+
 ## [3.0.0] - 2026-01-19
 
-### 🔒 Production Hardening
+### Production Hardening
 
 This release transforms the action into a bulletproof primitive suitable for foundational CI/CD use.
 
-### Added ➕
+### Added
 
 - **Invariant Validation** - Mandatory validation step ensures setup integrity:
   - CLI is installed AND functional (not just present on PATH)
@@ -37,18 +52,18 @@ This release transforms the action into a bulletproof primitive suitable for fou
   - `cli_binary_path` - Absolute path to installed binary (for custom tooling integration)
   - `validated_config` - JSON summary of effective configuration (for auditing/debugging)
 
-### Changed 🔧
+### Changed
 
 - **BREAKING (Intentional)**: Action now fails fast on partial failures
   - Workflows that previously succeeded despite broken CLI or unreachable orgs will now fail
-  - This is the correct behavior for a primitive—silent failures are dangerous
-  - Example: CLI installed but `sf` command non-functional → now fails instead of succeeding
+  - This is the correct behavior for a primitive, because silent failures are dangerous
+  - Example: CLI installed but `sf` command non-functional now fails instead of succeeding
 - **Shell Hardening Enhanced**: All bash steps now use strict error handling:
   - Core steps: `set -euo pipefail` (exit on error, undefined variables, or pipe failures)
   - Optional tooling: `set -eu` + conditional `pipefail` based on `strict` mode
   - Prevents subtle bugs from undefined variables while keeping plugin installs resilient
 
-### Fixed 🐞
+### Fixed
 
 - **Hidden Partial Failure Risk**: Action will no longer report success when:
   - CLI installation succeeds but CLI is non-functional
@@ -58,7 +73,7 @@ This release transforms the action into a bulletproof primitive suitable for fou
   - Prevents workflows from unknowingly relying on implicit defaults
   - Enables explicit versioning enforcement in hardened pipelines
 
-### Testing 🧪
+### Testing
 
 - **New Test Workflow**: `test-invariants.yml` validates:
   - Invariant validation catches failures correctly
@@ -66,7 +81,7 @@ This release transforms the action into a bulletproof primitive suitable for fou
   - Default tracking outputs are accurate
   - All features work across Linux, macOS, Windows
 
-### Documentation 📖
+### Documentation
 
 - **Guaranteed Invariants**: New README section documents the action's contract:
   - Lists explicit invariants guaranteed on success
@@ -94,9 +109,9 @@ This action is designed as a **primitive**, not an application. Primitives must 
 
 Before v3.0.0, it was possible for:
 
-- CLI to install but be non-functional → workflow succeeds → subsequent steps fail mysteriously
-- Auth to succeed but org be unreachable → workflow succeeds → deployments fail unpredictably
-- API version to be unresolved → workflow succeeds → commands using API calls fail
+- CLI to install but be non-functional, then workflow succeeds, then subsequent steps fail mysteriously
+- Auth to succeed but org be unreachable, then workflow succeeds, then deployments fail unpredictably
+- API version to be unresolved, then workflow succeeds, then commands using API calls fail
 
 After v3.0.0, these scenarios fail immediately with actionable error messages.
 
@@ -104,7 +119,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 
 ## [2.2.0] - 2026-01-17
 
-### 🚀 New Features - Performance & Caching
+### New Features - Performance & Caching
 
 - **OS-Specific Caching** - Cache paths are now partitioned by operating system (Linux/macOS/Windows) to prevent cross-platform corruption and improve hit rates
 - **Optimized Version Resolution** - Uses `npm view` to resolve "latest" versions 10x faster than a full install, with 10s timeout protection against network hangs
@@ -114,7 +129,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
   - Adds ~100ms overhead for significantly improved reliability
   - Runs inline with installation step for fast feedback
 
-### Performance 🚀
+### Performance
 
 - **Setup time**: ~25-55s (cached), ~1.5-3 min (first run) on Ubuntu/macOS
 - **Cache hit rate**: >95% across all platforms
@@ -122,7 +137,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 - **Reliability**: Broken installations caught immediately
 - **Platform note**: Windows runners are 10-15x slower; Ubuntu recommended for production CI/CD
 
-### 🛡️ Reliability & Retries
+### Reliability & Retries
 
 - **Resilient Installation Logic** - All network-dependent steps now include 3-attempt retries with exponential backoff:
   - Salesforce CLI (`@salesforce/cli`)
@@ -134,7 +149,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
   - Automatically rotates monthly to ensure fresh CLI versions
   - Provides clearer error messaging about fallback behavior
 
-### Added ➕
+### Added
 
 - **Formal Access Token Support** - Added explicit support for `auth_method: access-token` using the `sf org login access-token` command (replaces legacy logic)
 - **Access Token Default** - `allow_access_token_auth` now defaults to `true`, making this a safe non-breaking change
@@ -144,7 +159,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
   - Validates CLI version, core plugins, help system, config commands, and org listing
   - Total test coverage increased from ~90% to ~95%
 
-### Changed 🔧
+### Changed
 
 - **Test Architecture Overhaul** - Replaced monolithic "Quick Tests" (`test.yml`) with 4 dedicated workflows (`test-critical`, `test-plugins`, `test-auth`, `test-cross-platform`)
 - **Improved Plugin Verification** - Test suite now uses `jq` regex matching to reliably detect namespaced plugins
@@ -155,7 +170,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
   - Suggests checking for typos in `source_dirs` input
   - Reduces support burden with self-service guidance
 
-### Fixed 🐞
+### Fixed
 
 - **Windows Permissions** - Fixed file permission warnings for temporary auth files (`authurl.txt`, `access_token.txt`) on Windows runners
 - **Instance URL Handling** - Auth logic now correctly strips trailing slashes from `instance_url` to prevent connection errors
@@ -181,13 +196,13 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 
 ## [2.0.1] - 2026-01-15
 
-### Fixed 🐞
+### Fixed
 
 - **Documentation**: Corrected GitHub Marketplace URL to `setup-salesforce-cli`
 
 ## [2.0.0] - 2026-01-15
 
-### Added - Cross-Platform Support 🌐
+### Added - Cross-Platform Support
 
 - **Full Windows support** with PowerShell and Bash shell compatibility
 - **Full macOS support** with Homebrew integration
@@ -196,21 +211,21 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 - **Platform-specific caching paths** for optimal performance
 - **Comprehensive cross-platform testing** across Ubuntu, Windows, and macOS
 
-### Added - Enhanced Outputs 📊
+### Added - Enhanced Outputs
 
 - **`source_flags` output** for multi-directory deployment workflows
 - **Automatic directory creation** for missing default directories (e.g., force-app)
 - **Better error messages** with actionable feedback
 - **Improved output variable consistency** across all platforms
 
-### Added - Custom Plugin Support 🔌
+### Added - Custom Plugin Support
 
 - **`custom_sf_plugins` input** for installing any Salesforce CLI plugin
 - **Comma-separated list support** for multiple custom plugins
 - **Plugin validation** to prevent duplicate installations
 - **Flexible plugin management** alongside built-in plugin options
 
-### Changed - Improvements ⚡
+### Changed - Improvements
 
 - **Enhanced caching** with platform-specific paths and keys
 - **Better retry logic** for network resilience (3 attempts with exponential backoff)
@@ -219,14 +234,14 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 - **Input validation** now provides clearer error messages
 - **Authentication step** refactored for better cross-platform compatibility
 
-### Performance 🚀
+### Performance
 
 - Setup time: ~25-55s (cached), ~1.5-3 min (first run)
 - Cache hit rate >95% across all platforms
 - Optimized for both GitHub-hosted and self-hosted runners
 - Platform-specific optimizations (fastest on Linux, fully functional on all)
 
-### Documentation 📖
+### Documentation
 
 - **New: PLATFORM_SUPPORT.md** - Comprehensive cross-platform guide
 - **New: TESTING_STRATEGY.md** - Complete testing documentation
@@ -236,7 +251,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 - **Updated: Performance Metrics** - Revised execution times based on latest benchmarks
 - **Added: Windows Warnings** - Added performance expectations for Windows runners
 
-### Testing 🧪
+### Testing
 
 - **New: Cross-platform test suite** (`test-cross-platform.yml`)
 - **Enhanced: Quick tests** (`test.yml`) for rapid development feedback
@@ -246,7 +261,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 - **Cache performance testing** to ensure optimization
 - **Error handling validation** across all platforms
 
-### Migration Notes ⬆️
+### Migration Notes
 
 - **100% backward compatible** with v1 - no breaking changes
 - Simply change `@v1` to `@v2` in your workflows
@@ -328,6 +343,7 @@ After v3.0.0, these scenarios fail immediately with actionable error messages.
 
 ---
 
+[3.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v3.1.0
 [3.0.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v3.0.0
 [2.2.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.2.0
 [2.1.0]: https://github.com/rdbumstead/setup-salesforce-action/releases/tag/v2.1.0
