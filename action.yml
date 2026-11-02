@@ -13,7 +13,7 @@ inputs:
   node_version:
     description: "Node.js version"
     required: false
-    default: "20"
+    default: "26"
 
   cli_version:
     description: "Salesforce CLI version (latest or explicit version like 2.x.x)"
@@ -211,28 +211,28 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔍 Detecting operating system..."
+        echo "Detecting operating system..."
 
         case "${{ runner.os }}" in
           Linux)
             echo "os_type=linux" >> $GITHUB_OUTPUT
             echo "package_manager=apt" >> $GITHUB_OUTPUT
-            echo "  ✅ OS: Linux (apt package manager)"
+            echo "  OS: Linux (apt package manager)"
             ;;
           macOS)
             echo "os_type=macos" >> $GITHUB_OUTPUT
             echo "package_manager=brew" >> $GITHUB_OUTPUT
-            echo "  ✅ OS: macOS (brew package manager)"
+            echo "  OS: macOS (brew package manager)"
             ;;
           Windows)
             echo "os_type=windows" >> $GITHUB_OUTPUT
             echo "package_manager=choco" >> $GITHUB_OUTPUT
-            echo "  ✅ OS: Windows (choco package manager)"
+            echo "  OS: Windows (choco package manager)"
             ;;
           *)
             echo "os_type=unknown" >> $GITHUB_OUTPUT
             echo "package_manager=none" >> $GITHUB_OUTPUT
-            echo "  ⚠️  OS: Unknown"
+            echo "  WARNING: OS: Unknown"
             ;;
         esac
 
@@ -243,11 +243,11 @@ runs:
         set -euo pipefail
 
         if ! command -v jq &> /dev/null; then
-          echo "📦 Installing jq on Linux..."
+          echo "Installing jq on Linux..."
           sudo apt-get update && sudo apt-get install -y jq
-          echo "  ✅ jq installed successfully"
+          echo "  jq installed successfully"
         else
-          echo "✅ jq already installed"
+          echo "jq already installed"
         fi
 
     - name: Ensure dependencies (jq) - macOS
@@ -257,11 +257,11 @@ runs:
         set -euo pipefail
 
         if ! command -v jq &> /dev/null; then
-          echo "📦 Installing jq on macOS..."
+          echo "Installing jq on macOS..."
           brew install jq
-          echo "  ✅ jq installed successfully"
+          echo "  jq installed successfully"
         else
-          echo "✅ jq already installed"
+          echo "jq already installed"
         fi
 
     - name: Ensure dependencies (jq) - Windows
@@ -269,11 +269,11 @@ runs:
       shell: pwsh
       run: |
         if (!(Get-Command jq -ErrorAction SilentlyContinue)) {
-          Write-Host "📦 Installing jq on Windows..."
+          Write-Host "Installing jq on Windows..."
           choco install jq -y
-          Write-Host "  ✅ jq installed successfully"
+          Write-Host "  jq installed successfully"
         } else {
-          Write-Host "✅ jq already installed"
+          Write-Host "jq already installed"
         }
 
     - name: Generate cache key
@@ -282,7 +282,7 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔑 Generating cache key..."
+        echo "Generating cache key..."
 
         # Tooling hash
         if command -v sha256sum >/dev/null 2>&1; then
@@ -303,7 +303,7 @@ runs:
         CLI_CACHE_VERSION=""
 
         if [ "$CLI_VERSION_INPUT" = "latest" ]; then
-          echo "📦 Resolving actual Salesforce CLI version for cache..."
+          echo "Resolving actual Salesforce CLI version for cache..."
 
           # OPTIMIZATION: Fetch version from npm instead of installing
           # This prevents a full install just to check the version number
@@ -317,8 +317,8 @@ runs:
           if [ -z "$ACTUAL_VERSION" ]; then
             # Use monthly rotation for cache when npm is unreachable
             ACTUAL_VERSION="latest-$(date +%Y-%m)"
-            echo "⚠️ Could not resolve version from npm. Using time-based cache: $ACTUAL_VERSION"
-            echo "💡 Cache will rotate monthly to ensure freshness"
+            echo "WARNING: Could not resolve version from npm. Using time-based cache: $ACTUAL_VERSION"
+            echo "Cache will rotate monthly to ensure freshness"
           fi
 
           echo "  Detected CLI version: $ACTUAL_VERSION"
@@ -355,8 +355,8 @@ runs:
         fi
 
         echo "cli_cache_version=$CLI_CACHE_VERSION" >> $GITHUB_OUTPUT
-        echo "  ✅ Cache key uses CLI version: $CLI_CACHE_VERSION"
-        echo "  ✅ Tools hash: $TOOLS_HASH"
+        echo "  Cache key uses CLI version: $CLI_CACHE_VERSION"
+        echo "  Tools hash: $TOOLS_HASH"
 
     - name: Cache Salesforce CLI and plugins (Unix)
       if: runner.os != 'Windows'
@@ -390,7 +390,7 @@ runs:
         set -euo pipefail
 
         if ! command -v sf &> /dev/null; then
-          echo "📦 Installing Salesforce CLI..."
+          echo "Installing Salesforce CLI..."
           
           MAX_RETRIES=3
           RETRY_COUNT=0
@@ -409,18 +409,18 @@ runs:
             fi
             
             if $INSTALL_CMD; then
-              echo "  ✅ Salesforce CLI installed successfully"
+              echo "  Salesforce CLI installed successfully"
               break
             fi
             
             RETRY_COUNT=$((RETRY_COUNT + 1))
             
             if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              echo "  ⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              echo "  WARNING: Installation failed, waiting ${DELAY}s before retry..."
               sleep $DELAY
             else
-              echo "❌ Failed to install Salesforce CLI after $MAX_RETRIES attempts"
-              echo "💡 This may be due to:"
+              echo "ERROR: Failed to install Salesforce CLI after $MAX_RETRIES attempts"
+              echo "This may be due to:"
               echo "   - Network connectivity issues"
               echo "   - npm registry availability"
               echo "   - GitHub Actions rate limiting"
@@ -429,24 +429,24 @@ runs:
             fi
           done
         else
-          echo "✅ Salesforce CLI already installed"
+          echo "Salesforce CLI already installed"
         fi
 
         CLI_VERSION=$(sf --version | head -n 1)
-        echo "📊 Installed: $CLI_VERSION"
+        echo "Installed: $CLI_VERSION"
         echo "cli_version=$CLI_VERSION" >> $GITHUB_OUTPUT
 
         # Capture and output CLI binary path (Forward Compatibility for v4)
         CLI_PATH=$(command -v sf)
         echo "cli_path=$CLI_PATH" >> $GITHUB_OUTPUT
-        echo "📍 CLI Binary: $CLI_PATH"
+        echo "CLI Binary: $CLI_PATH"
 
         # Inline Health Check
         if ! sf plugins --core >/dev/null 2>&1; then
-          echo "❌ CLI installed but not responding correctly"
+          echo "ERROR: CLI installed but not responding correctly"
           exit 1
         fi
-        echo "✅ CLI verified and functional"
+        echo "CLI verified and functional"
 
     # --------------------------------------------------------------------------
     # SOURCE DIRECTORY RESOLUTION
@@ -464,7 +464,7 @@ runs:
         FLAGS=""
         HAS_VALID_DIR=false
 
-        echo "📁 Resolving source directories..."
+        echo "Resolving source directories..."
 
         for dir in "${DIRS[@]}"; do
           dir=$(echo "$dir" | xargs)
@@ -472,30 +472,30 @@ runs:
           if [ -d "$dir" ]; then
             FLAGS="$FLAGS --source-dir $dir"
             HAS_VALID_DIR=true
-            echo "  ✅ Found: $dir"
+            echo "  Found: $dir"
           elif [ "$dir" == "force-app" ]; then
-            echo "  ⚠️  Default directory '$dir' not found. Creating it..."
+            echo "  WARNING: Default directory '$dir' not found. Creating it..."
             mkdir -p "$dir"
             FLAGS="$FLAGS --source-dir $dir"
             HAS_VALID_DIR=true
-            echo "  ✅ Created: $dir"
+            echo "  Created: $dir"
           else
-            echo "  ⚠️  Warning: Directory '$dir' not found"
+            echo "  WARNING: Directory '$dir' not found"
           fi
         done
 
         if [ "$HAS_VALID_DIR" = "false" ]; then
-          echo "❌ Error: No valid source directories found."
+          echo "ERROR: No valid source directories found."
           echo ""
-          echo "💡 Tips:"
-          echo "   • Default 'force-app' is auto-created if missing"
-          echo "   • Custom directories must exist in your repository"
-          echo "   • Check your source_dirs input for typos"
+          echo "Tips:"
+          echo "   - Default 'force-app' is auto-created if missing"
+          echo "   - Custom directories must exist in your repository"
+          echo "   - Check your source_dirs input for typos"
           exit 1
         fi
 
         echo "source_flags=$FLAGS" >> $GITHUB_OUTPUT
-        echo "✅ Source directories resolved"
+        echo "Source directories resolved"
 
     # --------------------------------------------------------------------------
     # INPUT VALIDATION
@@ -506,7 +506,7 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔐 Validating authentication inputs..."
+        echo "Validating authentication inputs..."
         echo "  Auth method: ${{ inputs.auth_method }}"
 
         MISSING_INPUTS=()
@@ -531,7 +531,7 @@ runs:
             echo "  Using Direct Access Token authentication"
 
             if [ "${{ inputs.auth_method }}" = "access-token" ] && [ "${{ inputs.allow_access_token_auth }}" != "true" ]; then
-              echo "❌ Error: access-token authentication is disabled by default"
+              echo "ERROR: access-token authentication is disabled by default"
               echo "   Set allow_access_token_auth: true to explicitly enable it"
               exit 1
             fi
@@ -541,19 +541,19 @@ runs:
             ;;
             
           *)
-            echo "❌ Error: Invalid auth_method '${{ inputs.auth_method }}'"
+            echo "ERROR: Invalid auth_method '${{ inputs.auth_method }}'"
             echo "   Must be one of: jwt, sfdx-url, access-token"
             exit 1
             ;;
         esac
 
         if [ ${#MISSING_INPUTS[@]} -gt 0 ]; then
-          echo "❌ Error: The following required inputs are missing for ${{ inputs.auth_method }} authentication:"
+          echo "ERROR: The following required inputs are missing for ${{ inputs.auth_method }} authentication:"
           printf '  - %s\\n' "${MISSING_INPUTS[@]}"
           exit 1
         fi
 
-        echo "✅ Authentication inputs validated"
+        echo "Authentication inputs validated"
 
     # --------------------------------------------------------------------------
     # AUTHENTICATION
@@ -566,7 +566,7 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔐 Authenticating via JWT..."
+        echo "Authenticating via JWT..."
         echo "  Client ID: ${{ inputs.client_id && '***' || '(not set)' }}"
         echo "  Username: ${{ inputs.username }}"
         echo "  Instance URL: ${{ inputs.instance_url }}"
@@ -583,14 +583,14 @@ runs:
 
         # Cleanup function
         cleanup() {
-          echo "  🧹 Cleaning up JWT key file..."
+          echo "  Cleaning up JWT key file..."
           rm -f jwt.key
         }
         trap cleanup EXIT
 
         # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
-          echo "  🔧 Setting as Dev Hub..."
+          echo "  Setting as Dev Hub..."
           sf org login jwt \
             --client-id "${{ inputs.client_id }}" \
             --jwt-key-file jwt.key \
@@ -599,7 +599,7 @@ runs:
             --alias "${{ inputs.alias }}" \
             --set-default-dev-hub
         else
-          echo "  🔧 Setting as default org..."
+          echo "  Setting as default org..."
           sf org login jwt \
             --client-id "${{ inputs.client_id }}" \
             --jwt-key-file jwt.key \
@@ -609,7 +609,7 @@ runs:
             --set-default
         fi
 
-        echo "✅ JWT authentication successful"
+        echo "JWT authentication successful"
 
     - name: Authenticate Org (SFDX Auth URL)
       if: inputs.skip_auth != 'true' && inputs.dry_run != 'true' && inputs.auth_method == 'sfdx-url'
@@ -619,7 +619,7 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔐 Authenticating via SFDX Auth URL..."
+        echo "Authenticating via SFDX Auth URL..."
         echo "  Alias: ${{ inputs.alias }}"
 
         # Create auth URL file with secure permissions using env var
@@ -632,7 +632,7 @@ runs:
 
         # Cleanup function
         cleanup() {
-          echo "  🧹 Cleaning up auth URL file..."
+          echo "  Cleaning up auth URL file..."
           rm -f authurl.txt
         }
         trap cleanup EXIT
@@ -644,14 +644,14 @@ runs:
 
         # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
-          echo "  🔧 Setting as Dev Hub..."
+          echo "  Setting as Dev Hub..."
           $AUTH_CMD --set-default-dev-hub
         else
-          echo "  🔧 Setting as default org..."
+          echo "  Setting as default org..."
           $AUTH_CMD --set-default
         fi
 
-        echo "✅ SFDX Auth URL authentication successful"
+        echo "SFDX Auth URL authentication successful"
 
     - name: Authenticate Org (Access Token)
       if: inputs.skip_auth != 'true' && inputs.dry_run != 'true' && inputs.auth_method == 'access-token'
@@ -661,9 +661,9 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔐 Authenticating via Direct Access Token..."
-        echo "  ⚠️ WARNING: Access tokens are short-lived and recommended for advanced use only"
-        echo "  ⚠️ For production workflows, use JWT or SFDX Auth URL authentication"
+        echo "Authenticating via Direct Access Token..."
+        echo "  WARNING: Access tokens are short-lived and recommended for advanced use only"
+        echo "  WARNING: For production workflows, use JWT or SFDX Auth URL authentication"
         echo "  Instance URL: ${{ inputs.instance_url }}"
         echo "  Alias: ${{ inputs.alias }}"
 
@@ -676,14 +676,14 @@ runs:
 
         # Add dev hub or default flag
         if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
-          echo "  🔧 Setting as Dev Hub..."
+          echo "  Setting as Dev Hub..."
           sf config set target-dev-hub=${{ inputs.alias }} --global
         else
-          echo "  🔧 Setting as default org..."
+          echo "  Setting as default org..."
           sf config set target-org=${{ inputs.alias }} --global
         fi
 
-        echo "✅ Access Token authentication successful"
+        echo "Access Token authentication successful"
 
     - name: Detect Org Details
       id: detect-org
@@ -692,7 +692,7 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔍 Retrieving org details..."
+        echo "Retrieving org details..."
         DETAILS=$(sf org display --target-org ${{ inputs.alias }} --json)
 
         # Extract org information with better fallbacks
@@ -708,7 +708,7 @@ runs:
 
         # Additional check: sandbox orgs often have instanceUrl containing "cs" or "sandbox"
         if [ "$IS_SANDBOX" = "false" ] && [[ "$INSTANCE_URL" =~ (cs[0-9]+|sandbox) ]]; then
-          echo "  ℹ️  Detected sandbox from instance URL pattern"
+          echo "  INFO: Detected sandbox from instance URL pattern"
           IS_SANDBOX="true"
         fi
 
@@ -740,17 +740,17 @@ runs:
 
         # Display summary
         echo ""
-        echo "📊 Org Details Summary:"
-        echo "  ├─ Type: $ORG_TYPE"
-        echo "  ├─ Edition: $ORG_EDITION"
-        echo "  ├─ Org ID: $ORG_ID"
-        echo "  ├─ Username: $USERNAME"
-        echo "  ├─ Instance: $INSTANCE_URL"
+        echo "Org Details Summary:"
+        echo "  |- Type: $ORG_TYPE"
+        echo "  |- Edition: $ORG_EDITION"
+        echo "  |- Org ID: $ORG_ID"
+        echo "  |- Username: $USERNAME"
+        echo "  |- Instance: $INSTANCE_URL"
         echo "  └─ API Version: $API_VERSION"
         echo ""
 
         if [ "$ORG_TYPE" = "Production" ] && [[ "$INSTANCE_URL" =~ (cs[0-9]+|sandbox) ]]; then
-          echo "⚠️  WARNING: Org type detected as Production but instance URL suggests Sandbox"
+          echo "WARNING: Org type detected as Production but instance URL suggests Sandbox"
           echo "   If this is incorrect, please report this issue with your org details"
         fi
 
@@ -763,13 +763,13 @@ runs:
         if [ "${{ inputs.skip_auth }}" = "true" ] || [ "${{ inputs.dry_run }}" = "true" ]; then
           echo "auth_performed=false" >> $GITHUB_OUTPUT
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "ℹ️  Authentication skipped (dry-run mode)"
+            echo "INFO: Authentication skipped (dry-run mode)"
           else
-            echo "ℹ️  Authentication skipped"
+            echo "INFO: Authentication skipped"
           fi
         else
           echo "auth_performed=true" >> $GITHUB_OUTPUT
-          echo "✅ Authentication completed"
+          echo "Authentication completed"
         fi
 
     - name: Track Default Usage
@@ -778,30 +778,30 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "📊 Tracking default usage..."
+        echo "Tracking default usage..."
 
         # Track Node.js version default
-        if [ "${{ inputs.node_version }}" = "20" ]; then
+        if [ "${{ inputs.node_version }}" = "26" ]; then
           echo "used_default_node=true" >> $GITHUB_OUTPUT
-          echo "  ⚠️  Using default Node.js version: 20"
+          echo "  WARNING: Using default Node.js version: 26"
         else
           echo "used_default_node=false" >> $GITHUB_OUTPUT
-          echo "  ✅ Using explicit Node.js version: ${{ inputs.node_version }}"
+          echo "  Using explicit Node.js version: ${{ inputs.node_version }}"
         fi
 
         # Track CLI version default
         if [ "${{ inputs.cli_version }}" = "latest" ]; then
           echo "used_default_cli_version=true" >> $GITHUB_OUTPUT
-          echo "  ⚠️  Using default CLI version: latest"
+          echo "  WARNING: Using default CLI version: latest"
         else
           echo "used_default_cli_version=false" >> $GITHUB_OUTPUT
-          echo "  ✅ Using explicit CLI version: ${{ inputs.cli_version }}"
+          echo "  Using explicit CLI version: ${{ inputs.cli_version }}"
         fi
 
         # API version is always auto-detected in current implementation
         # API version is always auto-detected in current implementation
         echo "used_default_api_version=true" >> $GITHUB_OUTPUT
-        echo "  ℹ️  API version auto-detected from org"
+        echo "  INFO: API version auto-detected from org"
 
         # Generate JSON Configuration Summary (Forward Compatibility for v4)
         # This provides a structured audit record of the final configuration
@@ -821,7 +821,7 @@ runs:
         fi
 
         if ! sf plugins inspect sfdx-git-delta >/dev/null 2>&1; then
-          echo "📦 Installing sfdx-git-delta..."
+          echo "Installing sfdx-git-delta..."
           
           MAX_RETRIES=3
           RETRY_COUNT=0
@@ -832,24 +832,24 @@ runs:
             echo "  Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
             
             if echo y | sf plugins install sfdx-git-delta 2>&1; then
-              echo "  ✅ sfdx-git-delta installed"
+              echo "  sfdx-git-delta installed"
               break
             fi
             
             RETRY_COUNT=$((RETRY_COUNT + 1))
             
             if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              echo "  ⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              echo "  WARNING: Installation failed, waiting ${DELAY}s before retry..."
               sleep $DELAY
             else
-              echo "  ❌ Failed to install sfdx-git-delta after $MAX_RETRIES attempts"
+              echo "  ERROR: Failed to install sfdx-git-delta after $MAX_RETRIES attempts"
               if [ "${{ inputs.strict }}" = "true" ]; then
                 exit 1
               fi
             fi
           done
         else
-          echo "✅ sfdx-git-delta already installed"
+          echo "sfdx-git-delta already installed"
         fi
 
     - name: Install Salesforce Code Analyzer
@@ -862,7 +862,7 @@ runs:
         fi
 
         if ! sf plugins inspect @salesforce/plugin-code-analyzer >/dev/null 2>&1; then
-          echo "📦 Installing @salesforce/plugin-code-analyzer..."
+          echo "Installing @salesforce/plugin-code-analyzer..."
           
           MAX_RETRIES=3
           RETRY_COUNT=0
@@ -873,24 +873,24 @@ runs:
             echo "  Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
             
             if echo y | sf plugins install @salesforce/plugin-code-analyzer 2>&1; then
-              echo "  ✅ Code Analyzer installed"
+              echo "  Code Analyzer installed"
               break
             fi
             
             RETRY_COUNT=$((RETRY_COUNT + 1))
             
             if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              echo "  ⚠️  Installation failed, waiting ${DELAY}s before retry..."
+              echo "  WARNING: Installation failed, waiting ${DELAY}s before retry..."
               sleep $DELAY
             else
-              echo "  ❌ Failed to install Code Analyzer after $MAX_RETRIES attempts"
+              echo "  ERROR: Failed to install Code Analyzer after $MAX_RETRIES attempts"
               if [ "${{ inputs.strict }}" = "true" ]; then
                 exit 1
               fi
             fi
           done
         else
-          echo "✅ Code Analyzer already installed"
+          echo "Code Analyzer already installed"
         fi
 
     - name: Install Custom Salesforce CLI Plugins
@@ -902,7 +902,7 @@ runs:
           set -o pipefail
         fi
 
-        echo "📦 Installing custom Salesforce CLI plugins..."
+        echo "Installing custom Salesforce CLI plugins..."
 
         IFS=',' read -ra PLUGIN_LIST <<< "${{ inputs.custom_sf_plugins }}"
         FAILED_PLUGINS=()
@@ -923,7 +923,7 @@ runs:
           # Rejects: @scope/, @scope, @@invalid, @/name, etc.
           # Supports dots in package names (e.g. my.plugin)
           if ! echo "$plugin" | grep -qE '^(@[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+|[a-zA-Z0-9@._-]+)$'; then
-            echo "  ⚠️  Invalid plugin name format: '$plugin'"
+            echo "  WARNING: Invalid plugin name format: '$plugin'"
             echo "     Valid formats:"
             echo "       - Scoped: @scope/plugin-name"
             echo "       - Unscoped: plugin-name"
@@ -937,13 +937,13 @@ runs:
               
           # Check if already installed
           if sf plugins inspect "$plugin" >/dev/null 2>&1; then
-            echo "  ✅ $plugin already installed"
+            echo "  $plugin already installed"
             SKIPPED_PLUGINS+=("$plugin")
             continue
           fi
               
           # Install the plugin with retry logic
-          echo "  📦 Installing: $plugin"
+          echo "  Installing: $plugin"
           
           PLUGIN_RETRIES=3
           PLUGIN_ATTEMPT=0
@@ -954,7 +954,7 @@ runs:
             CURRENT_DELAY=$((PLUGIN_DELAY * (2 ** PLUGIN_ATTEMPT)))
             
             if echo y | sf plugins install "$plugin" 2>&1; then
-              echo "    ✅ Installed successfully"
+              echo "    Installed successfully"
               INSTALLED_PLUGINS+=("$plugin")
               INSTALL_SUCCESS=true
               break
@@ -963,13 +963,13 @@ runs:
             PLUGIN_ATTEMPT=$((PLUGIN_ATTEMPT + 1))
             
             if [ $PLUGIN_ATTEMPT -lt $PLUGIN_RETRIES ]; then
-              echo "    ⚠️  Attempt $PLUGIN_ATTEMPT failed, retrying in ${CURRENT_DELAY}s..."
+              echo "    WARNING: Attempt $PLUGIN_ATTEMPT failed, retrying in ${CURRENT_DELAY}s..."
               sleep $CURRENT_DELAY
             fi
           done
           
           if [ "$INSTALL_SUCCESS" = "false" ]; then
-            echo "    ❌ Failed to install after $PLUGIN_RETRIES attempts"
+            echo "    ERROR: Failed to install after $PLUGIN_RETRIES attempts"
             FAILED_PLUGINS+=("$plugin")
             if [ "${{ inputs.strict }}" = "true" ]; then
               exit 1
@@ -979,23 +979,23 @@ runs:
 
         # Summary
         echo ""
-        echo "📊 Plugin Installation Summary:"
-        echo "   ├─ Installed: ${#INSTALLED_PLUGINS[@]}"
-        echo "   ├─ Already Present: ${#SKIPPED_PLUGINS[@]}"
+        echo "Plugin Installation Summary:"
+        echo "   |- Installed: ${#INSTALLED_PLUGINS[@]}"
+        echo "   |- Already Present: ${#SKIPPED_PLUGINS[@]}"
         echo "   └─ Failed: ${#FAILED_PLUGINS[@]}"
 
         if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
           echo ""
-          echo "⚠️  Failed Plugins:"
+          echo "WARNING: Failed Plugins:"
           printf '   - %s\n' "${FAILED_PLUGINS[@]}"
           
           if [ "${{ inputs.strict }}" = "true" ]; then
             echo ""
-            echo "❌ Strict mode enabled: Failing workflow due to plugin errors"
+            echo "ERROR: Strict mode enabled: Failing workflow due to plugin errors"
             exit 1
           else
             echo ""
-            echo "💡 Non-strict mode: Continuing despite failures"
+            echo "Non-strict mode: Continuing despite failures"
             echo "   Set strict: 'true' to fail on plugin errors"
           fi
         fi
@@ -1010,11 +1010,11 @@ runs:
         fi
 
         if ! command -v prettier &> /dev/null; then
-          echo "📦 Installing Prettier with Salesforce plugins..."
+          echo "Installing Prettier with Salesforce plugins..."
           npm install --global prettier prettier-plugin-apex @prettier/plugin-xml
-          echo "  ✅ Prettier installed"
+          echo "  Prettier installed"
         else
-          echo "✅ Prettier already installed"
+          echo "Prettier already installed"
         fi
 
     - name: Install ESLint and plugins
@@ -1027,11 +1027,11 @@ runs:
         fi
 
         if ! command -v eslint &> /dev/null; then
-          echo "📦 Installing ESLint with Salesforce plugins..."
+          echo "Installing ESLint with Salesforce plugins..."
           npm install --global eslint @salesforce/eslint-config-lwc @lwc/eslint-plugin-lwc
-          echo "  ✅ ESLint installed"
+          echo "  ESLint installed"
         else
-          echo "✅ ESLint already installed"
+          echo "ESLint already installed"
         fi
 
     - name: Install sfdx-lwc-jest
@@ -1044,15 +1044,15 @@ runs:
         fi
 
         if ! npm list -g @salesforce/sfdx-lwc-jest &> /dev/null; then
-          echo "📦 Installing @salesforce/sfdx-lwc-jest..."
+          echo "Installing @salesforce/sfdx-lwc-jest..."
           # NOTE: This installs the latest version globally.
           # If your project has a specific version in package.json,
           # you may want to run 'npm install' locally instead to
           # avoid version mismatches with your LWC API version.
           npm install --global @salesforce/sfdx-lwc-jest
-          echo "  ✅ sfdx-lwc-jest installed"
+          echo "  sfdx-lwc-jest installed"
         else
-          echo "✅ sfdx-lwc-jest already installed"
+          echo "sfdx-lwc-jest already installed"
         fi
 
     # --------------------------------------------------------------------------
@@ -1063,39 +1063,39 @@ runs:
       run: |
         set -euo pipefail
 
-        echo "🔒 Validating setup invariants..."
+        echo "Validating setup invariants..."
 
         # 1. CLI is callable and functional
         if ! sf version --json >/dev/null 2>&1; then
-          echo "❌ INVARIANT VIOLATION: CLI not functional"
+          echo "ERROR: INVARIANT VIOLATION: CLI not functional"
           echo "   The Salesforce CLI was installed but is not responding correctly"
           exit 1
         fi
-        echo "  ✅ CLI functional"
+        echo "  CLI functional"
 
         # 2. Org is reachable (only if auth was performed)
         if [ "${{ inputs.skip_auth }}" != "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
           if ! sf org display --target-org "${{ inputs.alias }}" --json >/dev/null 2>&1; then
-            echo "❌ INVARIANT VIOLATION: Org not reachable"
+            echo "ERROR: INVARIANT VIOLATION: Org not reachable"
             echo "   Authentication appeared to succeed but org is not accessible"
             exit 1
           fi
-          echo "  ✅ Org reachable"
+          echo "  Org reachable"
           
           # 3. API version resolved
           API_VERSION="${{ steps.detect-org.outputs.api_version }}"
           if [ -z "$API_VERSION" ] || [ "$API_VERSION" = "unknown" ]; then
-            echo "❌ INVARIANT VIOLATION: API version not resolved"
+            echo "ERROR: INVARIANT VIOLATION: API version not resolved"
             echo "   Org is reachable but API version could not be determined"
             exit 1
           fi
-          echo "  ✅ API version resolved ($API_VERSION)"
+          echo "  API version resolved ($API_VERSION)"
         else
-          echo "  ⏭️  Skipping org validation (auth skipped or dry-run mode)"
+          echo "  Skipping org validation (auth skipped or dry-run mode)"
         fi
 
         echo ""
-        echo "✅ All invariants validated - setup is guaranteed functional"
+        echo "All invariants validated - setup is guaranteed functional"
 
     # --------------------------------------------------------------------------
     # FINAL STATUS
@@ -1106,19 +1106,19 @@ runs:
         set -euo pipefail
 
         echo ""
-        echo "🎉 Salesforce environment is ready!"
+        echo "Salesforce environment is ready!"
         echo ""
-        echo "📊 Installed Tools:"
-        echo "  ├─ Salesforce CLI: $(sf --version | head -n 1)"
-        [ "${{ inputs.install_delta }}" = "true" ] && echo "  ├─ sfdx-git-delta: ✅" || true
-        [ "${{ inputs.install_scanner }}" = "true" ] && echo "  ├─ Code Analyzer: ✅" || true
-        [ "${{ inputs.install_prettier }}" = "true" ] && echo "  ├─ Prettier: ✅" || true
-        [ "${{ inputs.install_eslint }}" = "true" ] && echo "  ├─ ESLint: ✅" || true
-        [ "${{ inputs.install_lwc_jest }}" = "true" ] && echo "  └─ LWC Jest: ✅" || true
+        echo "Installed Tools:"
+        echo "  |- Salesforce CLI: $(sf --version | head -n 1)"
+        [ "${{ inputs.install_delta }}" = "true" ] && echo "  |- sfdx-git-delta:" || true
+        [ "${{ inputs.install_scanner }}" = "true" ] && echo "  |- Code Analyzer:" || true
+        [ "${{ inputs.install_prettier }}" = "true" ] && echo "  |- Prettier:" || true
+        [ "${{ inputs.install_eslint }}" = "true" ] && echo "  |- ESLint:" || true
+        [ "${{ inputs.install_lwc_jest }}" = "true" ] && echo "  └─ LWC Jest:" || true
 
         if [ -n "${{ inputs.custom_sf_plugins }}" ]; then
           echo ""
-          echo "🔌 Custom Plugins:"
+          echo "Custom Plugins:"
           IFS=',' read -ra PLUGIN_LIST <<< "${{ inputs.custom_sf_plugins }}"
           PLUGIN_COUNT=${#PLUGIN_LIST[@]}
           INDEX=0
@@ -1129,14 +1129,14 @@ runs:
               if [ $INDEX -eq $PLUGIN_COUNT ]; then
                 echo "  └─ $plugin"
               else
-                echo "  ├─ $plugin"
+                echo "  |- $plugin"
               fi
             fi
           done
         fi
 
         echo ""
-        echo "✅ Setup complete - ready for Salesforce operations!"
+        echo "Setup complete - ready for Salesforce operations!"
 
     - name: Publish Setup Summary
       if: always()
@@ -1146,7 +1146,7 @@ runs:
 
         # Build summary for GitHub Actions UI
         {
-          echo "## 🎯 Salesforce Environment Setup"
+          echo "## Salesforce Environment Setup"
           echo ""
           echo "| Component | Value |"
           echo "|-----------|-------|"
@@ -1168,23 +1168,23 @@ runs:
           
           # Default usage tracking
           echo ""
-          echo "### ⚙️ Configuration"
+          echo "### Configuration"
           echo ""
           if [ "${{ steps.track-defaults.outputs.used_default_node }}" = "true" ]; then
-            echo "- ⚠️ Using default Node.js version"
+            echo "- WARNING: Using default Node.js version"
           else
-            echo "- ✅ Using explicit Node.js version"
+            echo "- Using explicit Node.js version"
           fi
           
           if [ "${{ steps.track-defaults.outputs.used_default_cli_version }}" = "true" ]; then
-            echo "- ⚠️ Using default CLI version (latest)"
+            echo "- WARNING: Using default CLI version (latest)"
           else
-            echo "- ✅ Using explicit CLI version"
+            echo "- Using explicit CLI version"
           fi
           
           # Installed tools
           echo ""
-          echo "### 🔧 Installed Tools"
+          echo "### Installed Tools"
           echo ""
           echo "- Salesforce CLI"
           
@@ -1196,7 +1196,7 @@ runs:
           
           if [ -n "${{ inputs.custom_sf_plugins }}" ]; then
             echo ""
-            echo "### 🔌 Custom Plugins"
+            echo "### Custom Plugins"
             echo ""
             IFS=',' read -ra PLUGIN_LIST <<< "${{ inputs.custom_sf_plugins }}"
             for plugin in "${PLUGIN_LIST[@]}"; do
