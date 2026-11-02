@@ -6,9 +6,9 @@ This document details cross-platform support for the Setup Salesforce CLI action
 
 | Platform                          | Status             | Node Versions | Notes                                               |
 | --------------------------------- | ------------------ | ------------- | --------------------------------------------------- |
-| **Ubuntu** (latest, 22.04, 20.04) | Fully Supported | 22, 24, 26    | Recommended for best performance                    |
-| **Windows** (latest, 2022, 2019)  | Fully Supported | 22, 24, 26    | PowerShell and Bash shells supported                |
-| **macOS** (latest, 13, 12)        | Fully Supported | 22, 24, 26    | Homebrew required (pre-installed on GitHub runners) |
+| **Ubuntu** (latest, 26.04, 24.04) | Fully Supported | 22, 24, 26    | Recommended for best performance                    |
+| **Windows** (latest, 2025, 2022)  | Fully Supported | 22, 24, 26    | PowerShell and Bash shells supported                |
+| **macOS** (latest, 26, 15)        | Fully Supported | 22, 24, 26    | Homebrew required (pre-installed on GitHub runners) |
 
 ## Quick Start by Platform
 
