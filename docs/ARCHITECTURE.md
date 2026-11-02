@@ -44,7 +44,7 @@ This action follows the same pattern. It is **not** an application. It is a **pr
 | **Contract-First**         | Outputs and environment variables are stable interfaces. Breaking changes require major version bumps.                                     |
 | **Zero Policy**            | Detection informs, but does not decide. The action reports org type, API version, etc., but never implements "if sandbox then do X" logic. |
 | **Composability**          | The action does one thing well: provision a validated Salesforce execution environment. Everything else is the consumer's responsibility.  |
-| **Backward Compatibility** | Defaults never change in minor versions, except that a default runtime that has reached its upstream end of life may move to the current LTS line in a minor release, and the CHANGELOG calls it out. New features are additive.                                                                        |
+| **Backward Compatibility** | Defaults never change in minor versions. Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out. New features are additive.                                                                        |
 
 ### Why Composite Actions (Not TypeScript)
 
@@ -478,7 +478,7 @@ git push origin v3 --force
 | ------------ | --------------------------------------------------- |
 | **Inputs**   | Never removed, only deprecated with 6-month warning |
 | **Outputs**  | Maintained for 1 major version after deprecation    |
-| **Defaults** | Never change in PATCH or MINOR releases. Exception: a default runtime that has reached its upstream end of life may move to the current LTS line in a MINOR release, and the CHANGELOG calls it out |
+| **Defaults** | Never change in PATCH or MINOR releases. Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out. |
 | **Behavior** | Additive only in MINOR releases                     |
 
 ### Deprecation Process

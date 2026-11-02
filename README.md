@@ -141,7 +141,7 @@ This action follows strict [Semantic Versioning](https://semver.org/):
 
 ### Guarantees
 
-- Defaults never change in MINOR versions (e.g., CLI version, Node version). The one exception is a default runtime that has reached its upstream end of life: a MINOR release may move it to the current LTS line, and the CHANGELOG calls it out.
+- Defaults never change in MINOR versions (e.g., CLI version, Node version). Exception: when a default runtime reaches its upstream end of life, a MINOR release may move the default to the current LTS line, and the CHANGELOG calls it out.
 - Breaking changes only in MAJOR versions
 - Consumers should pin to MAJOR version: `@v3`
 
