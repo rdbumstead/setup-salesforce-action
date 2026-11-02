@@ -30,8 +30,11 @@ jobs:
         plugin:
           - name: "sfdx-hardis"
             verify_cmd: "sf hardis:auth:login --help"
+            node: "26"
+          # Its native addon does not compile on Node 26 yet, so this entry pins 24
           - name: "@dxatscale/sfpowerscripts"
             verify_cmd: "sf plugins | grep sfpowerscripts"
+            node: "24"
 
     steps:
       - name: Checkout
@@ -41,6 +44,7 @@ jobs:
         uses: ./
         with:
           skip_auth: "true"
+          node_version: "${{ matrix.plugin.node }}"
           custom_sf_plugins: "${{ matrix.plugin.name }}"
 
       - name: Verify Plugin Installation
