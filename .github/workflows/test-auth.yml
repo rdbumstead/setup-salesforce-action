@@ -53,13 +53,13 @@ jobs:
 
           # Verify outputs are not empty
           if [ -z "${{ steps.setup-sf.outputs.org_id }}" ]; then
-            echo "❌ org_id output is empty"
+            echo "ERROR: org_id output is empty"
             exit 1
           fi
 
           # Verify source_flags matches expectations
           if [[ "${{ steps.setup-sf.outputs.source_flags }}" != *"--source-dir force-app"* ]]; then
-             echo "❌ source_flags output is incorrect: ${{ steps.setup-sf.outputs.source_flags }}"
+             echo "ERROR: source_flags output is incorrect: ${{ steps.setup-sf.outputs.source_flags }}"
              exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ vars.SFDX_USERNAME }}
           alias: "CustomOrgName"
-          node_version: "20"
+          node_version: "26"
           cli_version: "latest"
 
       - name: Verify Custom Alias
@@ -88,9 +88,9 @@ jobs:
           sf org list
 
           if sf org display --target-org CustomOrgName; then
-            echo "✅ Custom alias working"
+            echo "Custom alias working"
           else
-            echo "❌ Custom alias not found"
+            echo "ERROR: Custom alias not found"
             exit 1
           fi
 
@@ -116,16 +116,16 @@ jobs:
           DEV_HUB=$(sf config get target-dev-hub --json 2>/dev/null | jq -r 'if .result | type == "array" then .result[0].value else .result.value end // empty')
 
           if [ -z "$DEV_HUB" ]; then
-            echo "❌ Dev Hub not set"
+            echo "ERROR: Dev Hub not set"
             exit 1
           fi
 
           if [ "$DEV_HUB" != "TargetOrg" ]; then
-            echo "❌ Dev Hub not set correctly. Expected: TargetOrg, Got: $DEV_HUB"
+            echo "ERROR: Dev Hub not set correctly. Expected: TargetOrg, Got: $DEV_HUB"
             exit 1
           fi
 
-          echo "✅ Dev Hub configured successfully: $DEV_HUB"
+          echo "Dev Hub configured successfully: $DEV_HUB"
 
   sfdx-url:
     name: SFDX Auth URL
@@ -151,37 +151,37 @@ jobs:
           sf config unset target-org --global 2>/dev/null || true
 
           # Verify org is accessible via the default alias (TargetOrg)
-          echo "📊 Checking org via default alias..."
+          echo "Checking org via default alias..."
           sf org display --target-org TargetOrg
 
           echo ""
           echo "Verifying outputs..."
-          echo "  ├─ Org ID: ${{ steps.setup-sfdx-url.outputs.org_id }}"
-          echo "  ├─ Auth Performed: ${{ steps.setup-sfdx-url.outputs.auth_performed }}"
-          echo "  └─ API Version: ${{ steps.setup-sfdx-url.outputs.api_version }}"
+          echo "  |- Org ID: ${{ steps.setup-sfdx-url.outputs.org_id }}"
+          echo "  |- Auth Performed: ${{ steps.setup-sfdx-url.outputs.auth_performed }}"
+          echo "  \`- API Version: ${{ steps.setup-sfdx-url.outputs.api_version }}"
 
           # Validate org_id is not empty
           if [ -z "${{ steps.setup-sfdx-url.outputs.org_id }}" ]; then
-            echo "❌ org_id output is empty"
+            echo "ERROR: org_id output is empty"
             exit 1
           fi
 
           # Validate auth_performed is true
           if [ "${{ steps.setup-sfdx-url.outputs.auth_performed }}" != "true" ]; then
-            echo "❌ auth_performed should be 'true'"
+            echo "ERROR: auth_performed should be 'true'"
             exit 1
           fi
 
           # Verify the org ID from sf org display matches the action output
           DISPLAYED_ORG_ID=$(sf org display --target-org TargetOrg --json | jq -r '.result.id // .result.orgId')
           if [ "$DISPLAYED_ORG_ID" != "${{ steps.setup-sfdx-url.outputs.org_id }}" ]; then
-            echo "❌ Org ID mismatch between sf org display and action output"
+            echo "ERROR: Org ID mismatch between sf org display and action output"
             echo "  Display: $DISPLAYED_ORG_ID"
             echo "  Action: ${{ steps.setup-sfdx-url.outputs.org_id }}"
             exit 1
           fi
 
-          echo "✅ SFDX Auth URL authentication successful"
+          echo "SFDX Auth URL authentication successful"
 
   access-token:
     name: Access Token
@@ -234,34 +234,34 @@ jobs:
 
       - name: Verify Access Token Authentication
         run: |
-          echo "🔍 Verifying access token authentication..."
+          echo "Verifying access token authentication..."
 
           sf org display --target-org AccessTokenOrg
 
           echo ""
-          echo "📊 Checking outputs..."
-          echo "  ├─ Org ID (Generator): ${{ steps.mint-token.outputs.org_id }}"
-          echo "  ├─ Org ID (Action): ${{ steps.test-action.outputs.org_id }}"
-          echo "  ├─ Username: ${{ steps.test-action.outputs.username }}"
-          echo "  ├─ Org Type: ${{ steps.test-action.outputs.org_type }}"
-          echo "  ├─ Org Edition: ${{ steps.test-action.outputs.org_edition }}"
-          echo "  ├─ Auth Performed: ${{ steps.test-action.outputs.auth_performed }}"
-          echo "  └─ API Version: ${{ steps.test-action.outputs.api_version }}"
+          echo "Checking outputs..."
+          echo "  |- Org ID (Generator): ${{ steps.mint-token.outputs.org_id }}"
+          echo "  |- Org ID (Action): ${{ steps.test-action.outputs.org_id }}"
+          echo "  |- Username: ${{ steps.test-action.outputs.username }}"
+          echo "  |- Org Type: ${{ steps.test-action.outputs.org_type }}"
+          echo "  |- Org Edition: ${{ steps.test-action.outputs.org_edition }}"
+          echo "  |- Auth Performed: ${{ steps.test-action.outputs.auth_performed }}"
+          echo "  \`- API Version: ${{ steps.test-action.outputs.api_version }}"
 
           # Validate outputs
           if [ -z "${{ steps.test-action.outputs.org_id }}" ]; then
-            echo "❌ org_id output is empty"
+            echo "ERROR: org_id output is empty"
             exit 1
           fi
 
           if [ "${{ steps.test-action.outputs.auth_performed }}" != "true" ]; then
-            echo "❌ auth_performed should be 'true'"
+            echo "ERROR: auth_performed should be 'true'"
             exit 1
           fi
 
           # Verify org_id matches between generator and action
           if [ "${{ steps.mint-token.outputs.org_id }}" != "${{ steps.test-action.outputs.org_id }}" ]; then
-            echo "❌ Org IDs don't match!"
+            echo "ERROR: Org IDs don't match!"
             echo "  Generator: ${{ steps.mint-token.outputs.org_id }}"
             echo "  Action: ${{ steps.test-action.outputs.org_id }}"
             exit 1
@@ -270,13 +270,13 @@ jobs:
           DEFAULT_ORG=$(sf config get target-org --json 2>/dev/null | jq -r 'if .result | type == "array" then .result[0].value else .result.value end // empty')
 
           if [ "$DEFAULT_ORG" != "AccessTokenOrg" ]; then
-            echo "❌ Default org not set correctly. Got: $DEFAULT_ORG"
+            echo "ERROR: Default org not set correctly. Got: $DEFAULT_ORG"
             exit 1
           fi
 
-          echo "✅ Default org correctly set to AccessTokenOrg"
+          echo "Default org correctly set to AccessTokenOrg"
           echo ""
-          echo "✅ Access token authentication verified successfully"
+          echo "Access token authentication verified successfully"
 
   outputs-validation:
     name: Output Validation
@@ -311,24 +311,24 @@ jobs:
 
           # Verify api_version is not empty
           if [ -z "${{ steps.setup-sf.outputs.api_version }}" ]; then
-            echo "❌ api_version output is empty"
+            echo "ERROR: api_version output is empty"
             exit 1
           fi
 
           # Verify auth_performed is true
           if [ "${{ steps.setup-sf.outputs.auth_performed }}" != "true" ]; then
-            echo "❌ auth_performed should be 'true'"
+            echo "ERROR: auth_performed should be 'true'"
             exit 1
           fi
 
           # Verify org_type is valid
           ORG_TYPE="${{ steps.setup-sf.outputs.org_type }}"
           if [[ ! "$ORG_TYPE" =~ ^(Production|Sandbox|Scratch)$ ]]; then
-            echo "❌ Invalid org_type: $ORG_TYPE"
+            echo "ERROR: Invalid org_type: $ORG_TYPE"
             exit 1
           fi
 
-          echo "✅ All outputs validated"
+          echo "All outputs validated"
 
   org-type-detection:
     name: Org Type Detection
@@ -357,19 +357,19 @@ jobs:
 
           # Validate it's one of the expected values
           if [[ "$ORG_TYPE" =~ ^(Production|Sandbox|Scratch)$ ]]; then
-            echo "✅ Valid org type: $ORG_TYPE"
+            echo "Valid org type: $ORG_TYPE"
           else
-            echo "❌ Invalid org type: $ORG_TYPE"
+            echo "ERROR: Invalid org type: $ORG_TYPE"
             exit 1
           fi
 
           # Additional validation based on instance URL
           if [[ "$INSTANCE" =~ (cs[0-9]+|sandbox) ]] && [ "$ORG_TYPE" = "Production" ]; then
-            echo "⚠️  WARNING: Possible misdetection - sandbox URL but Production type"
+            echo "WARNING: Possible misdetection - sandbox URL but Production type"
             echo "   This may indicate an issue with org type detection logic"
           fi
 
-          echo "✅ Org type detection validated"
+          echo "Org type detection validated"
 
   summary:
     name: Authentication Tests Summary
@@ -387,64 +387,64 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "## 🔐 Authentication Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Authentication Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.jwt-basic.result }}" = "success" ]; then
-            echo "✅ **JWT - Basic**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Basic**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.jwt-basic.result }}" = "skipped" ]; then
-            echo "⏭️ **JWT - Basic**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Basic**: Skipped (no secrets)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **JWT - Basic**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Basic**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.jwt-custom-alias.result }}" = "success" ]; then
-            echo "✅ **JWT - Custom Alias**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Custom Alias**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.jwt-custom-alias.result }}" = "skipped" ]; then
-            echo "⏭️ **JWT - Custom Alias**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Custom Alias**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **JWT - Custom Alias**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Custom Alias**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.jwt-dev-hub.result }}" = "success" ]; then
-            echo "✅ **JWT - Dev Hub**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Dev Hub**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.jwt-dev-hub.result }}" = "skipped" ]; then
-            echo "⏭️ **JWT - Dev Hub**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Dev Hub**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **JWT - Dev Hub**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**JWT - Dev Hub**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.sfdx-url.result }}" = "success" ]; then
-            echo "✅ **SFDX Auth URL**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**SFDX Auth URL**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.sfdx-url.result }}" = "skipped" ]; then
-            echo "⏭️ **SFDX Auth URL**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**SFDX Auth URL**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **SFDX Auth URL**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**SFDX Auth URL**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.access-token.result }}" = "success" ]; then
-            echo "✅ **Access Token**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Access Token**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.access-token.result }}" = "skipped" ]; then
-            echo "⏭️ **Access Token**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**Access Token**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Access Token**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Access Token**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.outputs-validation.result }}" = "success" ]; then
-            echo "✅ **Output Validation**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Output Validation**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.outputs-validation.result }}" = "skipped" ]; then
-            echo "⏭️ **Output Validation**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**Output Validation**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Output Validation**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Output Validation**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.org-type-detection.result }}" = "success" ]; then
-            echo "✅ **Org Type Detection**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "**Org Type Detection**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.org-type-detection.result }}" = "skipped" ]; then
-            echo "⏭️ **Org Type Detection**: Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "**Org Type Detection**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Org Type Detection**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Org Type Detection**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **Note**: These tests require repository secrets and will be skipped in forks." >> $GITHUB_STEP_SUMMARY
+          echo "**Note**: These tests require repository secrets and will be skipped in forks." >> $GITHUB_STEP_SUMMARY

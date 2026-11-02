@@ -54,10 +54,10 @@ jobs:
         shell: bash
         run: |
           if ! command -v sf &> /dev/null; then
-            echo "❌ CLI not installed in dry-run mode"
+            echo "ERROR: CLI not installed in dry-run mode"
             exit 1
           fi
-          echo "✅ CLI installed successfully"
+          echo "CLI installed successfully"
 
   # Test default tracking outputs
   test-default-tracking:
@@ -77,52 +77,52 @@ jobs:
         shell: bash
         run: |
           if [ "${{ steps.setup-defaults.outputs.used_default_node }}" != "true" ]; then
-            echo "❌ Expected used_default_node=true, got ${{ steps.setup-defaults.outputs.used_default_node }}"
+            echo "ERROR: Expected used_default_node=true, got ${{ steps.setup-defaults.outputs.used_default_node }}"
             exit 1
           fi
 
           if [ "${{ steps.setup-defaults.outputs.used_default_cli_version }}" != "true" ]; then
-            echo "❌ Expected used_default_cli_version=true, got ${{ steps.setup-defaults.outputs.used_default_cli_version }}"
+            echo "ERROR: Expected used_default_cli_version=true, got ${{ steps.setup-defaults.outputs.used_default_cli_version }}"
             exit 1
           fi
 
-          echo "✅ Default tracking outputs correct when defaults used"
+          echo "Default tracking outputs correct when defaults used"
 
           # Verify forward compatibility outputs
           if [ -z "${{ steps.setup-defaults.outputs.cli_binary_path }}" ]; then
-            echo "❌ cli_binary_path output missing"
+            echo "ERROR: cli_binary_path output missing"
             exit 1
           fi
-          echo "📍 Verified cli_binary_path: ${{ steps.setup-defaults.outputs.cli_binary_path }}"
+          echo "Verified cli_binary_path: ${{ steps.setup-defaults.outputs.cli_binary_path }}"
 
           if [ -z "${{ steps.setup-defaults.outputs.validated_config }}" ]; then
-            echo "❌ validated_config output missing"
+            echo "ERROR: validated_config output missing"
             exit 1
           fi
-          echo "📊 Verified validated_config: ${{ steps.setup-defaults.outputs.validated_config }}"
+          echo "Verified validated_config: ${{ steps.setup-defaults.outputs.validated_config }}"
 
       - name: Setup with explicit versions
         id: setup-explicit
         uses: ./
         with:
           skip_auth: true
-          node_version: "18"
+          node_version: "24"
           cli_version: "2.30.8"
 
       - name: Verify default tracking outputs (explicit versions)
         shell: bash
         run: |
           if [ "${{ steps.setup-explicit.outputs.used_default_node }}" != "false" ]; then
-            echo "❌ Expected used_default_node=false, got ${{ steps.setup-explicit.outputs.used_default_node }}"
+            echo "ERROR: Expected used_default_node=false, got ${{ steps.setup-explicit.outputs.used_default_node }}"
             exit 1
           fi
 
           if [ "${{ steps.setup-explicit.outputs.used_default_cli_version }}" != "false" ]; then
-            echo "❌ Expected used_default_cli_version=false, got ${{ steps.setup-explicit.outputs.used_default_cli_version }}"
+            echo "ERROR: Expected used_default_cli_version=false, got ${{ steps.setup-explicit.outputs.used_default_cli_version }}"
             exit 1
           fi
 
-          echo "✅ Default tracking outputs correct when explicit versions used"
+          echo "Default tracking outputs correct when explicit versions used"
 
   # Test with authentication to verify full invariant validation
   test-full-invariants:
@@ -154,16 +154,16 @@ jobs:
 
           # Verify critical outputs are not empty
           if [ -z "${{ steps.setup-auth.outputs.org_id }}" ] || [ "${{ steps.setup-auth.outputs.org_id }}" = "unknown" ]; then
-            echo "❌ org_id not populated"
+            echo "ERROR: org_id not populated"
             exit 1
           fi
 
           if [ -z "${{ steps.setup-auth.outputs.api_version }}" ] || [ "${{ steps.setup-auth.outputs.api_version }}" = "unknown" ]; then
-            echo "❌ api_version not populated"
+            echo "ERROR: api_version not populated"
             exit 1
           fi
 
-          echo "✅ All outputs correctly populated"
+          echo "All outputs correctly populated"
 
   # Test debug mode
   test-debug-mode:
@@ -185,5 +185,5 @@ jobs:
       - name: Verify setup succeeded
         shell: bash
         run: |
-          echo "✅ Debug mode input accepted"
+          echo "Debug mode input accepted"
           echo "Config: ${{ steps.setup-debug.outputs.validated_config }}"
