@@ -447,8 +447,8 @@ After review, this action will remain a stable, monolithic CLI wrapper to priori
 | Version            | Purpose                                | Stability                         | Example                       |
 | ------------------ | -------------------------------------- | --------------------------------- | ----------------------------- |
 | **MAJOR** (v3.x.x) | Breaking changes, architectural shifts | Production-ready after `.0` patch | v3.0.0 (invariant validation) |
-| **MINOR** (v3.1.x) | New features, additive changes         | Immediate production use          | v3.1.0 (new optional input)   |
-| **PATCH** (v3.1.1) | Bug fixes, documentation               | Immediate production use          | v3.1.1 (fix auth timeout)     |
+| **MINOR** (v3.2.x) | New features, additive changes         | Immediate production use          | v3.2.0 (new optional input)   |
+| **PATCH** (v3.2.1) | Bug fixes, documentation               | Immediate production use          | v3.2.1 (fix auth timeout)     |
 
 ### Release Cadence
 
@@ -462,15 +462,15 @@ After review, this action will remain a stable, monolithic CLI wrapper to priori
 
 ```bash
 # Create release
-git tag -a v3.1.0 -m "feat: add custom alias support"
-git push origin v3.1.0
+git tag -a v3.2.0 -m "feat: add custom alias support"
+git push origin v3.2.0
 
 # Update major version pointer (force)
-git tag -fa v3 -m "Update v3 to latest v3.1.0"
+git tag -fa v3 -m "Update v3 to latest v3.2.0"
 git push origin v3 --force
 ```
 
-**User Impact**: Users pinned to `@v3` automatically get v3.1.0. Users pinned to `@v3.0.0` stay on exact version.
+**User Impact**: Users pinned to `@v3` automatically get v3.2.0. Users pinned to `@v3.0.0` stay on exact version.
 
 ### Backward Compatibility Promise
 
