@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.0] - 2026-11-02
+## [3.1.0] - Unreleased
 
 ### Changed
 
 - **Default Node.js version is now 26** (was 20). Node 20 reached its upstream end of life on 2026-04-30, and the latest Salesforce CLI requires Node 22 or newer. Node 26 is the current LTS line. This is a documented exception to the rule that defaults never change in MINOR releases, which now allows moving the default of a runtime that has reached its upstream end of life. Set `node_version` explicitly to keep a different supported version.
 - The test matrix now covers Node 22, 24 and 26 (was 18 and 20), because the Salesforce CLI declares `node >=22.0.0`.
+- **Plugins with native addons may not build on Node 26 yet.** For example, `@dxatscale/sfpowerscripts` fails to compile its native module on Node 26. If your workflow installs a plugin like that, set `node_version: "24"`.
 - **Caches roll over once.** The Node version is part of the cache key, so the first run after upgrading is a cache miss. Later runs hit the new cache as usual.
 - **Log output no longer carries emoji.** Step messages and summary lines use plain text prefixes such as `ERROR:`, `WARNING:` and `INFO:`. Anyone matching log text on a glyph needs to update the match.
 - Documentation no longer uses emoji, arrows or box drawing characters.
