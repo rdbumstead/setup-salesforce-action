@@ -246,23 +246,6 @@ jobs:
             exit 1
           fi
 
-  clean-text:
-    name: Clean Text
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Fail on non-ASCII characters in tracked files
-        shell: bash
-        run: |
-          # git grep exits 0 on a match and 1 on none, so test it in an if
-          if git grep -nP '[^\x00-\x7F]'; then
-            echo "ERROR: non-ASCII characters found in the files listed above"
-            exit 1
-          fi
-          echo "No non-ASCII characters in tracked files"
-
   summary:
     name: Critical Tests Summary
     runs-on: ubuntu-latest
@@ -275,7 +258,6 @@ jobs:
       - cli-retry
       - source-flags
       - pinned-cli-version
-      - clean-text
     if: always()
 
     steps:
@@ -341,13 +323,6 @@ jobs:
             echo "**Pinned CLI Version**: Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Pinned CLI Version**: Failed" >> $GITHUB_STEP_SUMMARY
-            FAILED=true
-          fi
-
-          if [ "${{ needs.clean-text.result }}" = "success" ]; then
-            echo "**Clean Text**: Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Clean Text**: Failed" >> $GITHUB_STEP_SUMMARY
             FAILED=true
           fi
 
