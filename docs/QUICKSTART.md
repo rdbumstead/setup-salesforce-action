@@ -2,17 +2,17 @@
 
 Get your Salesforce CI/CD pipeline running in **under 15 minutes**!
 
-## 🎯 What You'll Build
+## What You'll Build
 
 A complete CI/CD pipeline with:
 
-- ✅ Automated setup of Salesforce CLI
-- ✅ Cross-platform compatibility (Linux, Windows, macOS)
-- ✅ Code quality and testing tools included
+- Automated setup of Salesforce CLI
+- Cross-platform compatibility (Linux, Windows, macOS)
+- Code quality and testing tools included
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - [ ] GitHub repository with Salesforce code
 - [ ] Salesforce org(s) with Connected App
@@ -20,13 +20,13 @@ A complete CI/CD pipeline with:
 
 ---
 
-## 🚀 Step 1: Setup Salesforce External Client App (5 minutes)
+## Step 1: Setup Salesforce External Client App (5 minutes)
 
 ### 1.1 Enable External Client Apps
 
 **Required for all orgs:** As of the Winter '25 release (October 2024), Salesforce recommends using External Client Apps for CI/CD integrations.
 
-1. Setup → Quick Find → Search **"External Client Apps"**
+1. Setup, then Quick Find, then Search **"External Client Apps"**
 2. Click **Settings** (in External Client Apps section)
 3. Toggle **ON** the setting **"Enable External Client Apps"**
 4. Click **Save**
@@ -55,7 +55,7 @@ You now have:
 
 ### 1.3 Create External Client App in Salesforce
 
-1. Setup → Quick Find → Search **"External Client Apps"**
+1. Setup, then Quick Find, then Search **"External Client Apps"**
 2. Click **New**
 3. Fill in the basic information:
 
@@ -64,16 +64,16 @@ You now have:
    - **Description** (optional): `JWT authentication for GitHub Actions`
 
 4. **Configure OAuth Settings**:
-   - ✅ Check **"Enable OAuth Settings"**
+   - Check **"Enable OAuth Settings"**
    - **Callback URL**: `http://localhost:1717/OauthRedirect`
      - _Note: This URL is not used for JWT auth but is required by Salesforce_
 5. **Enable JWT Bearer Flow**:
-   - ✅ Check **"Use digital signatures"**
+   - Check **"Use digital signatures"**
    - Click **Choose File** and upload your `server.crt` certificate
 6. **Select OAuth Scopes**:
    - Add these scopes from "Available OAuth Scopes" to "Selected OAuth Scopes":
-     - ✅ **Access and manage your data (api)**
-     - ✅ **Perform requests on your behalf at any time (refresh_token, offline_access)**
+     - **Access and manage your data (api)**
+     - **Perform requests on your behalf at any time (refresh_token, offline_access)**
 7. Click **Save**
 
 8. **Note your Consumer Key**:
@@ -103,14 +103,14 @@ If your org is on a pre-Winter '25 release, or you prefer the traditional approa
 <details>
 <summary>Click to expand: Connected App Instructions (Legacy)</summary>
 
-1. Setup → App Manager → **New Connected App**
+1. Setup, then App Manager, then **New Connected App**
 2. Fill in basic info:
    - Connected App Name: `GitHub Actions CI`
    - Contact Email: your@email.com
 3. Enable OAuth Settings:
-   - ✅ Enable OAuth Settings
+   - Enable OAuth Settings
    - Callback URL: `http://localhost:1717/OauthRedirect`
-   - ✅ Use digital signatures
+   - Use digital signatures
    - Upload your `server.crt` certificate
    - OAuth Scopes: **Access and manage your data (api)**, **Perform requests on your behalf at any time (refresh_token, offline_access)**
 4. **Save** and note the **Consumer Key** (Client ID)
@@ -122,15 +122,15 @@ If your org is on a pre-Winter '25 release, or you prefer the traditional approa
 
 ---
 
-## 🔐 Step 2: Configure GitHub Secrets (2 minutes)
+## Step 2: Configure GitHub Secrets (2 minutes)
 
-### Go to: Repository → Settings → Secrets and variables → Actions
+### Go to: Repository, then Settings, then Secrets and variables, then Actions
 
 #### Create Repository Secrets:
 
 ```
-SFDX_JWT_KEY         → Contents of server.key file
-SFDX_CLIENT_ID       → Consumer Key from External Client App
+SFDX_JWT_KEY         -> Contents of server.key file
+SFDX_CLIENT_ID       -> Consumer Key from External Client App
 ```
 
 **How to get the JWT key contents:**
@@ -150,20 +150,20 @@ cat server.key
 #### Create Repository Variables:
 
 ```
-SFDX_USERNAME        → Your Salesforce username (the org you authenticated)
+SFDX_USERNAME        -> Your Salesforce username (the org you authenticated)
 ```
 
 **For multiple environments** (optional):
 
 ```
-PROD_USERNAME        → Production org username
-UAT_USERNAME         → UAT org username
-INT_USERNAME         → Integration org username
+PROD_USERNAME        -> Production org username
+UAT_USERNAME         -> UAT org username
+INT_USERNAME         -> Integration org username
 ```
 
 ---
 
-## 🔍 Verification
+## Verification
 
 After creating your External Client App and secrets, verify the setup works:
 
@@ -185,7 +185,7 @@ If this works locally, it will work in GitHub Actions!
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 ### Security Best Practices
 
@@ -202,12 +202,12 @@ If this works locally, it will work in GitHub Actions!
 
 If authentication fails:
 
-- ✅ Verify `server.crt` was uploaded to the External Client App
-- ✅ Ensure the entire `server.key` content is in `SFDX_JWT_KEY` secret
-- ✅ Check that Consumer Key matches `SFDX_CLIENT_ID`
-- ✅ Confirm username is correct
-- ✅ Wait the full 10 minutes after creating the External Client App
-- ✅ For sandboxes, use `--instance-url https://test.salesforce.com`
+- Verify `server.crt` was uploaded to the External Client App
+- Ensure the entire `server.key` content is in `SFDX_JWT_KEY` secret
+- Check that Consumer Key matches `SFDX_CLIENT_ID`
+- Confirm username is correct
+- Wait the full 10 minutes after creating the External Client App
+- For sandboxes, use `--instance-url https://test.salesforce.com`
 
 ### Multiple Orgs/Environments
 
@@ -226,7 +226,7 @@ Or use **one External Client App in production** and authenticate to other orgs 
 
 ---
 
-## 📝 Step 3: Add Workflow Files (3 minutes)
+## Step 3: Add Workflow Files (3 minutes)
 
 ### 3.1 Create Directory Structure
 
@@ -265,7 +265,7 @@ jobs:
 
 ---
 
-## 🧪 Step 4: Test Your Setup (2 minutes)
+## Step 4: Test Your Setup (2 minutes)
 
 ### 5.1 Create a Test PR
 
@@ -284,28 +284,28 @@ git push origin test-cicd
 
 ### 5.2 Open Pull Request
 
-1. Go to GitHub → Pull Requests → New Pull Request
+1. Go to GitHub, then Pull Requests, then New Pull Request
 2. Base: `main` (or your default branch)
 3. Compare: `test-cicd`
 4. Create Pull Request
 
-### 5.3 Watch the Magic! ✨
+### 5.3 Watch the Magic!
 
 You should see:
 
-- ✅ Salesforce CLI setup
-- ✅ Authentication success
-- ✅ Verification command running
+- Salesforce CLI setup
+- Authentication success
+- Verification command running
 
 ---
 
-## 🎉 You're Done!
+## You're Done!
 
 Your Salesforce CI/CD pipeline is now active!
 
 ---
 
-## 🔧 Customization Options
+## Customization Options
 
 ### Change Source Directories
 
@@ -362,16 +362,16 @@ jobs:
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### "Authentication Failed"
 
 **Check:**
 
-- ✅ JWT key copied correctly (no line breaks)
-- ✅ Client ID matches Connected App
-- ✅ Username is correct
-- ✅ Certificate uploaded to Connected App
+- JWT key copied correctly (no line breaks)
+- Client ID matches Connected App
+- Username is correct
+- Certificate uploaded to Connected App
 
 **Fix:**
 
@@ -402,14 +402,14 @@ See [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md) and [TROUBLESHOOTING.md](TROUBLES
 
 ---
 
-## 📚 Next Steps
+## Next Steps
 
 ### Learn More:
 
-- 📖 [Full Documentation](../README.md)
-- 🔄 [Migration Guide](MIGRATION.md) - Upgrade from v1 or v2
-- 🖥️ [Platform Support](PLATFORM_SUPPORT.md) - Cross-platform details
-- 🧪 [Testing Strategy](TESTING_STRATEGY.md) - Testing approach
+- [Full Documentation](../README.md)
+- [Migration Guide](MIGRATION.md) - Upgrade from v1 or v2
+- [Platform Support](PLATFORM_SUPPORT.md) - Cross-platform details
+- [Testing Strategy](TESTING_STRATEGY.md) - Testing approach
 
 ### Add More Features:
 
@@ -420,7 +420,7 @@ See [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md) and [TROUBLESHOOTING.md](TROUBLES
 
 ---
 
-## ✅ Success Checklist
+## Success Checklist
 
 After setup, verify:
 
@@ -431,15 +431,15 @@ After setup, verify:
 
 ---
 
-## 💡 Pro Tips
+## Pro Tips
 
 ### 1. Use Branch Protection Rules
 
-Settings → Branches → Add rule:
+Settings, then Branches, then Add rule:
 
-- ✅ Require status checks to pass
-- ✅ Require branches to be up to date
-- ✅ Include administrators
+- Require status checks to pass
+- Require branches to be up to date
+- Include administrators
 
 ### 2. Create .prettierrc
 
@@ -488,18 +488,18 @@ See [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md) for details.
 
 ---
 
-## 🆘 Get Help
+## Get Help
 
-- 🐞 [Report Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
-- 💬 [Ask Questions](https://github.com/rdbumstead/setup-salesforce-action/discussions)
-- 📖 [Documentation](../README.md)
-- 🔧 [Troubleshooting Guide](TROUBLESHOOTING.md)
+- [Report Issues](https://github.com/rdbumstead/setup-salesforce-action/issues)
+- [Ask Questions](https://github.com/rdbumstead/setup-salesforce-action/discussions)
+- [Documentation](../README.md)
+- [Troubleshooting Guide](TROUBLESHOOTING.md)
 
 ---
 
 **Setup time:** ~15 minutes  
-**Result:** Enterprise-grade CI/CD pipeline ✅  
-**Difficulty:** Beginner-friendly 🟢  
-**Platforms:** Linux, Windows, macOS 🌐
+**Result:** Enterprise-grade CI/CD pipeline  
+**Difficulty:** Beginner-friendly  
+**Platforms:** Linux, Windows, macOS
 
-Happy deploying! 🚀
+Happy deploying!
