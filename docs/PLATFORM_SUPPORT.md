@@ -2,15 +2,15 @@
 
 This document details cross-platform support for the Setup Salesforce CLI action across Ubuntu, Windows, and macOS runners.
 
-## 🖥️ Supported Platforms
+## Supported Platforms
 
 | Platform                          | Status             | Node Versions | Notes                                               |
 | --------------------------------- | ------------------ | ------------- | --------------------------------------------------- |
-| **Ubuntu** (latest, 22.04, 20.04) | ✅ Fully Supported | 18, 20, 22    | Recommended for best performance                    |
-| **Windows** (latest, 2022, 2019)  | ✅ Fully Supported | 18, 20, 22    | PowerShell and Bash shells supported                |
-| **macOS** (latest, 13, 12)        | ✅ Fully Supported | 18, 20, 22    | Homebrew required (pre-installed on GitHub runners) |
+| **Ubuntu** (latest, 22.04, 20.04) | Fully Supported | 18, 20, 22    | Recommended for best performance                    |
+| **Windows** (latest, 2022, 2019)  | Fully Supported | 18, 20, 22    | PowerShell and Bash shells supported                |
+| **macOS** (latest, 13, 12)        | Fully Supported | 18, 20, 22    | Homebrew required (pre-installed on GitHub runners) |
 
-## 🚀 Quick Start by Platform
+## Quick Start by Platform
 
 ### Ubuntu (Linux)
 
@@ -109,7 +109,7 @@ jobs:
 - Automatic `jq` installation via Homebrew
 - Homebrew pre-installed on GitHub-hosted runners
 
-## 🧪 Cross-Platform Testing
+## Cross-Platform Testing
 
 Test your Salesforce code across all platforms:
 
@@ -126,7 +126,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18, 20]
+        node-version: [22, 24, 26]
 
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
         run: npm test
 ```
 
-## 📦 Dependency Management
+## Dependency Management
 
 ### jq (JSON processor)
 
@@ -153,9 +153,9 @@ The action automatically installs `jq` on all platforms:
 
 | Platform | Installation Method | Automatic? |
 | -------- | ------------------- | ---------- |
-| Ubuntu   | `apt-get`           | ✅ Yes     |
-| Windows  | `chocolatey`        | ✅ Yes     |
-| macOS    | `brew`              | ✅ Yes     |
+| Ubuntu   | `apt-get`           | Yes     |
+| Windows  | `chocolatey`        | Yes     |
+| macOS    | `brew`              | Yes     |
 
 ### Node.js
 
@@ -165,7 +165,7 @@ Node.js is installed via `actions/setup-node@v4` and works identically across al
 
 Installed via npm globally, works identically across all platforms.
 
-## 💾 Caching Strategy
+## Caching Strategy
 
 The action uses platform-aware caching:
 
@@ -194,13 +194,13 @@ sf-v3-{OS}-node{version}-cli{version}-tools{hash}
 
 **Example Keys:**
 
-- `sf-v3-Linux-node20-cli2.30.8-toolsabcd1234`
-- `sf-v3-Windows-node20-cli2.30.8-toolsabcd1234`
-- `sf-v3-macOS-node20-cli2.30.8-toolsabcd1234`
+- `sf-v3-Linux-node26-cli2.30.8-toolsabcd1234`
+- `sf-v3-Windows-node26-cli2.30.8-toolsabcd1234`
+- `sf-v3-macOS-node26-cli2.30.8-toolsabcd1234`
 
 This ensures each OS maintains its own cache while sharing the same configuration.
 
-## 🔐 Security Considerations
+## Security Considerations
 
 ### JWT Key File Permissions
 
@@ -221,7 +221,7 @@ icacls jwt.key /grant:r "$env:USERNAME:(R)"
 
 Both methods ensure only the current user can read the JWT private key.
 
-## 🎯 Shell Selection
+## Shell Selection
 
 Different shells are available on different platforms:
 
@@ -233,9 +233,9 @@ Different shells are available on different platforms:
   run: echo "Works on all platforms"
 ```
 
-- ✅ Ubuntu: Native
-- ✅ Windows: Git Bash (included)
-- ✅ macOS: Native
+- Ubuntu: Native
+- Windows: Git Bash (included)
+- macOS: Native
 
 ### PowerShell
 
@@ -245,9 +245,9 @@ Different shells are available on different platforms:
   run: Write-Host "PowerShell Core"
 ```
 
-- ✅ Ubuntu: Available
-- ✅ Windows: Native (PowerShell 7+)
-- ✅ macOS: Available
+- Ubuntu: Available
+- Windows: Native (PowerShell 7+)
+- macOS: Available
 
 ### Platform-Specific Shells
 
@@ -265,7 +265,7 @@ Different shells are available on different platforms:
   run: echo "Unix shell"
 ```
 
-## 🐞 Platform-Specific Troubleshooting
+## Platform-Specific Troubleshooting
 
 ### Windows Issues
 
@@ -319,7 +319,7 @@ runs-on: windows-latest
 # Or pre-install dependencies
 ```
 
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 Typical action execution times (with cache):
 
@@ -346,7 +346,7 @@ Typical action execution times (with cache):
 - macOS: 10x cost
 - Windows: 2x cost but 10-15x slower execution = poor value
 
-## 🏗️ Self-Hosted Runners
+## Self-Hosted Runners
 
 ### Ubuntu Self-Hosted
 
@@ -388,7 +388,7 @@ choco install git nodejs jq -y
 brew install git node jq
 ```
 
-## 🔄 Migration Between Platforms
+## Migration Between Platforms
 
 ### Moving from Ubuntu to Windows
 
@@ -424,7 +424,7 @@ runs-on: ubuntu-latest
 - Update any Windows-specific paths
 - Faster execution, lower cost
 
-## 🎨 Best Practices
+## Best Practices
 
 ### 1. Use Matrix Builds for Cross-Platform Testing
 
@@ -479,7 +479,7 @@ strategy:
     os: [ubuntu-latest, macos-latest]
 ```
 
-## 📝 Platform-Specific Examples
+## Platform-Specific Examples
 
 ### Example: Windows with PowerShell
 
@@ -533,7 +533,7 @@ jobs:
           tree force-app
 ```
 
-## 🔗 Related Resources
+## Related Resources
 
 - [GitHub Actions: Runner Images](https://github.com/actions/runner-images)
 - [Salesforce CLI on Different Platforms](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm)
