@@ -42,7 +42,7 @@ jobs:
       - name: Verify Basic Setup
         run: |
           echo "Testing basic SF CLI functionality..."
-          sf --version | head -n 1
+          sf --version
           sf org display
 
           echo "Verifying outputs..."

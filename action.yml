@@ -432,9 +432,9 @@ runs:
           echo "Salesforce CLI already installed"
         fi
 
-        # The first sf call after a fresh install can exit 13 ("unsettled
-        # top-level await") on some runners and then work on the next call.
-        # Retry it a few times and judge success by the version line.
+        # Read sf --version whole and pick the version line here. Piping sf
+        # into head closes the pipe early, and on macOS and Windows runners sf
+        # then exits 13 ("unsettled top-level await"). The retry is a guard.
         CLI_VERSION=""
         for ATTEMPT in 1 2 3; do
           set +e
@@ -1132,7 +1132,7 @@ runs:
         echo "Salesforce environment is ready!"
         echo ""
         echo "Installed Tools:"
-        echo "  |- Salesforce CLI: $(sf --version | head -n 1)"
+        echo "  |- Salesforce CLI: ${{ steps.install-cli.outputs.cli_version }}"
         [ "${{ inputs.install_delta }}" = "true" ] && echo "  |- sfdx-git-delta" || true
         [ "${{ inputs.install_scanner }}" = "true" ] && echo "  |- Code Analyzer" || true
         [ "${{ inputs.install_prettier }}" = "true" ] && echo "  |- Prettier" || true

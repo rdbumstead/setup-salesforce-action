@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **The first `sf --version` after install is retried.** On some macOS and Windows runners the first `sf` call after a fresh install exits 13 with "Detected unsettled top-level await". The action now tries it up to 3 times, logs a warning on each retry, and still fails the step if no version comes back.
+- **`sf` no longer exits 13 when the action reads its version.** The action piped `sf --version` into `head`, and on macOS and Windows runners `sf` then exited 13 with "Detected unsettled top-level await". That failed the install step, and in the final summary step it printed the warning into every run log. The action now reads the whole output and picks the version line itself, retries up to 3 times as a guard, and the summary reuses the version it already read.
 
 ## [3.0.0] - 2026-01-19
 
