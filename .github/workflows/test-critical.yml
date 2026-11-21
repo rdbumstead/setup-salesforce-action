@@ -60,7 +60,7 @@ jobs:
       - name: Verify CLI Installation
         run: |
           echo "Verifying SF CLI installation..."
-          sf --version | head -n 1
+          sf --version
 
           echo ""
           echo "Verifying plugin system..."
@@ -236,7 +236,7 @@ jobs:
 
       - name: Verify CLI Version
         run: |
-          INSTALLED=$(sf --version | head -n 1)
+          INSTALLED=$(sf --version)
           echo "Installed: $INSTALLED"
 
           if [[ "$INSTALLED" == *"2.67.7"* ]]; then

@@ -254,7 +254,6 @@ This action orchestrates the installation of several best-in-class open-source t
 We explicitly verify compatibility with popular ecosystem plugins in our [test suite](.github/workflows/test-plugins.yml), including:
 
 - **[sfdx-hardis](https://github.com/hardisgroupcom/sfdx-hardis)** (CI/CD orchestration)
-- **[sfpowerscripts](https://github.com/dxatscale/sfpowerscripts)** (Release management)
 
 ---
 

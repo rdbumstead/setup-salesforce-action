@@ -432,7 +432,30 @@ runs:
           echo "Salesforce CLI already installed"
         fi
 
-        CLI_VERSION=$(sf --version | head -n 1)
+        # Read sf --version whole and pick the version line here. Piping sf
+        # into head closes the pipe early, and on macOS and Windows runners sf
+        # then exits 13 ("unsettled top-level await"). The retry is a guard.
+        CLI_VERSION=""
+        for ATTEMPT in 1 2 3; do
+          set +e
+          CLI_OUTPUT=$(sf --version)
+          SF_EXIT=$?
+          set -e
+          while IFS= read -r LINE; do
+            case "$LINE" in
+              *@salesforce/cli/*) CLI_VERSION="$LINE"; break ;;
+            esac
+          done <<< "$CLI_OUTPUT"
+          if [ -n "$CLI_VERSION" ]; then
+            break
+          fi
+          echo "::warning::sf --version exited $SF_EXIT without a version on attempt $ATTEMPT of 3"
+          sleep 2
+        done
+        if [ -z "$CLI_VERSION" ]; then
+          echo "ERROR: Salesforce CLI installed but sf --version failed 3 times"
+          exit 1
+        fi
         echo "Installed: $CLI_VERSION"
         echo "cli_version=$CLI_VERSION" >> $GITHUB_OUTPUT
 
@@ -1109,7 +1132,7 @@ runs:
         echo "Salesforce environment is ready!"
         echo ""
         echo "Installed Tools:"
-        echo "  |- Salesforce CLI: $(sf --version | head -n 1)"
+        echo "  |- Salesforce CLI: ${{ steps.install-cli.outputs.cli_version }}"
         [ "${{ inputs.install_delta }}" = "true" ] && echo "  |- sfdx-git-delta" || true
         [ "${{ inputs.install_scanner }}" = "true" ] && echo "  |- Code Analyzer" || true
         [ "${{ inputs.install_prettier }}" = "true" ] && echo "  |- Prettier" || true

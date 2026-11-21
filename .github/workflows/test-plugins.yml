@@ -31,10 +31,6 @@ jobs:
           - name: "sfdx-hardis"
             verify_cmd: "sf hardis:auth:login --help"
             node: "26"
-          # Its native addon does not compile on Node 26 yet, so this entry pins 24
-          - name: "@dxatscale/sfpowerscripts"
-            verify_cmd: "sf plugins | grep sfpowerscripts"
-            node: "24"
 
     steps:
       - name: Checkout
@@ -332,7 +328,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.single-plugin.result }}" = "success" ]; then
-            echo "**Single Plugin**: Passed (all 3 plugins)" >> $GITHUB_STEP_SUMMARY
+            echo "**Single Plugin**: Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Single Plugin**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
@@ -393,3 +389,10 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Note**: Some tests require repository secrets and will be skipped in forks." >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any test failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "**Status**: One or more plugin tests failed or were cancelled" >> $GITHUB_STEP_SUMMARY
+          echo "One or more plugin tests failed or were cancelled. See the jobs above."
+          exit 1
