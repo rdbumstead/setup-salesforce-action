@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A clean text check in CI that fails when any tracked file holds a character outside ASCII.
 
+### Fixed
+
+- **The first `sf --version` after install is retried.** On some macOS and Windows runners the first `sf` call after a fresh install exits 13 with "Detected unsettled top-level await". The action now tries it up to 3 times, logs a warning on each retry, and still fails the step if no version comes back.
+
 ## [3.0.0] - 2026-01-19
 
 ### Production Hardening

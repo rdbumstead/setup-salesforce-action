@@ -432,7 +432,30 @@ runs:
           echo "Salesforce CLI already installed"
         fi
 
-        CLI_VERSION=$(sf --version | head -n 1)
+        # The first sf call after a fresh install can exit 13 ("unsettled
+        # top-level await") on some runners and then work on the next call.
+        # Retry it a few times and judge success by the version line.
+        CLI_VERSION=""
+        for ATTEMPT in 1 2 3; do
+          set +e
+          CLI_OUTPUT=$(sf --version)
+          SF_EXIT=$?
+          set -e
+          while IFS= read -r LINE; do
+            case "$LINE" in
+              *@salesforce/cli/*) CLI_VERSION="$LINE"; break ;;
+            esac
+          done <<< "$CLI_OUTPUT"
+          if [ -n "$CLI_VERSION" ]; then
+            break
+          fi
+          echo "::warning::sf --version exited $SF_EXIT without a version on attempt $ATTEMPT of 3"
+          sleep 2
+        done
+        if [ -z "$CLI_VERSION" ]; then
+          echo "ERROR: Salesforce CLI installed but sf --version failed 3 times"
+          exit 1
+        fi
         echo "Installed: $CLI_VERSION"
         echo "cli_version=$CLI_VERSION" >> $GITHUB_OUTPUT
 
