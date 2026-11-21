@@ -327,3 +327,10 @@ jobs:
           else
             echo "**Cache Verification**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Fail if any test failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "**Status**: One or more cross-platform tests failed or were cancelled" >> $GITHUB_STEP_SUMMARY
+          echo "One or more cross-platform tests failed or were cancelled. See the jobs above."
+          exit 1
