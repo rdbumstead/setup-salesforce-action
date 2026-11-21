@@ -31,10 +31,10 @@ jobs:
           - name: "sfdx-hardis"
             verify_cmd: "sf hardis:auth:login --help"
             node: "26"
-          # Its native addon does not compile on Node 26 yet, so this entry pins 24
+          # Its native addon does not compile on Node 24 or 26, so this entry pins 22
           - name: "@dxatscale/sfpowerscripts"
             verify_cmd: "sf plugins | grep sfpowerscripts"
-            node: "24"
+            node: "22"
 
     steps:
       - name: Checkout
