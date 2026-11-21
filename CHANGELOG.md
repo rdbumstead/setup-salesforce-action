@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Default Node.js version is now 26** (was 20). Node 20 reached its upstream end of life on 2026-04-30, and the latest Salesforce CLI requires Node 22 or newer. Node 26 is the current LTS line. This is a documented exception to the rule that defaults never change in MINOR releases, which now allows moving the default of a runtime that has reached its upstream end of life. Set `node_version` explicitly to keep a different supported version.
 - The test matrix now covers Node 22, 24 and 26 (was 18 and 20), because the Salesforce CLI declares `node >=22.0.0`.
-- **Plugins with native addons may not build on newer Node yet.** For example, `@dxatscale/sfpowerscripts` fails to compile its native module on Node 24 and 26. If your workflow installs a plugin like that, set `node_version: "22"`.
+- **`@dxatscale/sfpowerscripts` no longer installs.** Its native module (better-sqlite3 8.4.0) does not compile on Node 22, 24 or 26, and the Salesforce CLI needs Node 22 or newer, so it cannot run on any Node this action supports. It has not been published since April 2024. It is out of the plugin tests and the README. Other plugins with native addons can hit the same problem on newer Node.
 - **Caches roll over once.** The Node version is part of the cache key, so the first run after upgrading is a cache miss. Later runs hit the new cache as usual.
 - **Log output no longer carries emoji.** Step messages and summary lines use plain text prefixes such as `ERROR:`, `WARNING:` and `INFO:`. Anyone matching log text on a glyph needs to update the match.
 - Documentation no longer uses emoji, arrows or box drawing characters.

@@ -31,10 +31,6 @@ jobs:
           - name: "sfdx-hardis"
             verify_cmd: "sf hardis:auth:login --help"
             node: "26"
-          # Its native addon does not compile on Node 24 or 26, so this entry pins 22
-          - name: "@dxatscale/sfpowerscripts"
-            verify_cmd: "sf plugins | grep sfpowerscripts"
-            node: "22"
 
     steps:
       - name: Checkout
@@ -332,7 +328,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.single-plugin.result }}" = "success" ]; then
-            echo "**Single Plugin**: Passed (all 3 plugins)" >> $GITHUB_STEP_SUMMARY
+            echo "**Single Plugin**: Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Single Plugin**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
